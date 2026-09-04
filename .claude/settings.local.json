@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:www.aihero.dev)",
+      "WebSearch",
+      "Bash(dbeaver-ce --version)"
+    ]
+  }
+}
