@@ -10,6 +10,7 @@ from app.routers import (
     categorization_rules,
     dashboard,
     expenses,
+    goals,
     imports,
     insights,
     transactions,
@@ -37,6 +38,7 @@ app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(imports.router, prefix="/api/v1")
 app.include_router(budgets.router, prefix="/api/v1")
 app.include_router(insights.router, prefix="/api/v1")
+app.include_router(goals.router, prefix="/api/v1")
 
 
 @app.get("/health")

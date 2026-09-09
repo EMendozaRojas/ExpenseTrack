@@ -34,6 +34,9 @@ export function AppLayout() {
           <NavLink to="/insights" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
             Insights
           </NavLink>
+          <NavLink to="/goals" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
+            Metas
+          </NavLink>
         </nav>
         {user && (
           <div className="app-header-user">

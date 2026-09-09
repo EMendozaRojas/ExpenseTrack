@@ -119,6 +119,43 @@ export interface BudgetInput {
   amount: string;
 }
 
+export type GoalStatus = "active" | "completed" | "archived";
+
+export interface SavingsGoal {
+  id: number;
+  name: string;
+  target_amount: string;
+  target_date: string | null;
+  linked_account_id: number | null;
+  status: GoalStatus;
+  current_amount: string;
+  pct: number;
+  created_at: string;
+}
+
+export interface GoalInput {
+  name: string;
+  target_amount: string;
+  target_date?: string | null;
+  linked_account_id?: number | null;
+}
+
+export interface GoalContribution {
+  id: number;
+  goal_id: number;
+  amount: string;
+  contributed_at: string;
+  note: string | null;
+  created_at: string;
+}
+
+export interface GoalProjection {
+  has_enough_data: boolean;
+  monthly_pace: string;
+  months_remaining: number | null;
+  projected_date: string | null;
+}
+
 export interface RecurringSeries {
   key: string;
   label: string;

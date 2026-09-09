@@ -11,9 +11,11 @@ from app.models import (  # noqa: F401  (registran los modelos)
     CategorizationRule,
     Category,
     DismissedRecurringSeries,
+    GoalContribution,
     ImportBatch,
     ImportRow,
     InsightSettings,
+    SavingsGoal,
     Transaction,
     User,
 )
