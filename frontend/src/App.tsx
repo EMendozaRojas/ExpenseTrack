@@ -5,6 +5,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AuthProvider } from "./features/auth/AuthContext";
 import { LoginPage } from "./features/auth/LoginPage";
 import { RegisterPage } from "./features/auth/RegisterPage";
+import { SocialCallbackPage } from "./features/auth/SocialCallbackPage";
 import { BudgetsPage } from "./features/budgets/BudgetsPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { GoalsPage } from "./features/goals/GoalsPage";
@@ -18,6 +19,7 @@ function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/auth/social-callback" element={<SocialCallbackPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />

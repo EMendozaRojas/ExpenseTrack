@@ -14,6 +14,12 @@ class Settings(BaseSettings):
 
     attachments_dir: str = "/app/storage/attachments"
 
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = "http://localhost:8000/api/v1/auth/oauth/google/callback"
+    frontend_base_url: str = "http://localhost:5173"
+    refresh_token_expire_days: int = 30
+
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.backend_cors_origins.split(",")]

@@ -8,6 +8,7 @@ from app.core.database import Base
 from app.models import (  # noqa: F401  (registran los modelos)
     Account,
     Attachment,
+    AuthIdentity,
     Budget,
     CategorizationRule,
     Category,
@@ -17,6 +18,7 @@ from app.models import (  # noqa: F401  (registran los modelos)
     ImportBatch,
     ImportRow,
     InsightSettings,
+    RefreshToken,
     SavingsGoal,
     Transaction,
     User,

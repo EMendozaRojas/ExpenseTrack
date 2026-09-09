@@ -24,3 +24,14 @@ export function login(credentials: Credentials): Promise<AuthTokens> {
 export function fetchCurrentUser(token: string): Promise<User> {
   return apiFetch<User>("/auth/me", token);
 }
+
+export function logoutRequest(refreshToken: string): Promise<void> {
+  return apiFetch<void>("/auth/logout", null, {
+    method: "POST",
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+}
+
+export function googleLoginUrl(apiBaseUrl: string): string {
+  return `${apiBaseUrl}/auth/oauth/google/start`;
+}

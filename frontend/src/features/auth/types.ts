@@ -12,4 +12,5 @@ export interface Credentials {
 export interface AuthTokens {
   access_token: string;
   token_type: string;
+  refresh_token?: string | null;
 }

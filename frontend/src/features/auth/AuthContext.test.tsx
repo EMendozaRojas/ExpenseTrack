@@ -72,4 +72,40 @@ describe("AuthContext", () => {
     expect(result.current.user).toBeNull();
     expect(localStorage.getItem("expensetrack_token")).toBeNull();
   });
+
+  it("loginWithTokens guarda access y refresh token (callback de login social)", async () => {
+    vi.mocked(api.fetchCurrentUser).mockResolvedValue(demoUser);
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => result.current.loginWithTokens("access-abc", "refresh-xyz"));
+
+    await waitFor(() => expect(result.current.user?.email).toBe(demoUser.email));
+    expect(localStorage.getItem("expensetrack_token")).toBe("access-abc");
+    expect(localStorage.getItem("expensetrack_refresh_token")).toBe("refresh-xyz");
+  });
+
+  it("logout revoca el refresh token guardado en el backend", async () => {
+    vi.mocked(api.login).mockResolvedValue({
+      access_token: "abc123",
+      token_type: "bearer",
+      refresh_token: "refresh-1",
+    });
+    vi.mocked(api.fetchCurrentUser).mockResolvedValue(demoUser);
+    vi.mocked(api.logoutRequest).mockResolvedValue(undefined);
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.login({ email: demoUser.email, password: "secret123" });
+    });
+    await waitFor(() => expect(result.current.user).not.toBeNull());
+
+    act(() => result.current.logout());
+
+    expect(api.logoutRequest).toHaveBeenCalledWith("refresh-1");
+    expect(localStorage.getItem("expensetrack_refresh_token")).toBeNull();
+  });
 });

@@ -2,7 +2,8 @@ import { useMutation } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 
-import { ApiError } from "../../api/client";
+import { API_BASE_URL, ApiError } from "../../api/client";
+import { googleLoginUrl } from "./api";
 import { useAuth } from "./useAuth";
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -89,6 +90,10 @@ export function RegisterPage() {
         <button type="submit" disabled={mutation.isPending}>
           {mutation.isPending ? "Creando cuenta..." : "Crear cuenta"}
         </button>
+
+        <a className="button-secondary auth-google-button" href={googleLoginUrl(API_BASE_URL)}>
+          Continuar con Google
+        </a>
 
         <p className="auth-switch">
           ¿Ya tienes cuenta? <Link to="/login">Inicia sesión</Link>
