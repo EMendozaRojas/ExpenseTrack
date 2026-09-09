@@ -91,6 +91,34 @@ export interface DashboardCategoryNode {
   subcategories: CategorySummary[];
 }
 
+export type BudgetStatusValue = "ok" | "warning" | "exceeded";
+
+export interface Budget {
+  id: number;
+  category_id: number;
+  category_name: string;
+  amount: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface BudgetWithStatus {
+  id: number;
+  category_id: number;
+  category_name: string;
+  category_icon: string | null;
+  amount: string;
+  is_active: boolean;
+  spent: string;
+  pct: number;
+  status: BudgetStatusValue;
+}
+
+export interface BudgetInput {
+  category_id: number;
+  amount: string;
+}
+
 export type ImportClassification = "NEW" | "EXACT_DUPLICATE" | "PROBABLE_DUPLICATE";
 export type ImportStrategy = "append_new" | "replace_range" | "replace_selected";
 

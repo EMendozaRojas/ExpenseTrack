@@ -5,6 +5,7 @@ from app.core.config import get_settings
 from app.routers import (
     accounts,
     auth,
+    budgets,
     categories,
     categorization_rules,
     dashboard,
@@ -33,6 +34,7 @@ app.include_router(transactions.router, prefix="/api/v1")
 app.include_router(expenses.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(imports.router, prefix="/api/v1")
+app.include_router(budgets.router, prefix="/api/v1")
 
 
 @app.get("/health")

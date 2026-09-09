@@ -1,4 +1,5 @@
 from app.models.account import Account
+from app.models.budget import Budget
 from app.models.categorization_rule import CategorizationRule
 from app.models.category import Category
 from app.models.import_batch import ImportBatch
@@ -14,4 +15,5 @@ __all__ = [
     "CategorizationRule",
     "ImportBatch",
     "ImportRow",
+    "Budget",
 ]
