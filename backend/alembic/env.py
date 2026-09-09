@@ -9,6 +9,8 @@ from app.models import (  # noqa: F401  (registran los modelos)
     Account,
     CategorizationRule,
     Category,
+    ImportBatch,
+    ImportRow,
     Transaction,
     User,
 )

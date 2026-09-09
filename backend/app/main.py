@@ -7,7 +7,9 @@ from app.routers import (
     auth,
     categories,
     categorization_rules,
+    dashboard,
     expenses,
+    imports,
     transactions,
 )
 
@@ -29,6 +31,8 @@ app.include_router(categorization_rules.router, prefix="/api/v1")
 app.include_router(accounts.router, prefix="/api/v1")
 app.include_router(transactions.router, prefix="/api/v1")
 app.include_router(expenses.router, prefix="/api/v1")
+app.include_router(dashboard.router, prefix="/api/v1")
+app.include_router(imports.router, prefix="/api/v1")
 
 
 @app.get("/health")

@@ -32,6 +32,7 @@ class Category(Base):
     icon: Mapped[str | None] = mapped_column(String(16), nullable=True)
     color: Mapped[str | None] = mapped_column(String(16), nullable=True)
     is_system: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    is_fixed: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     owner: Mapped["User | None"] = relationship(back_populates="categories")

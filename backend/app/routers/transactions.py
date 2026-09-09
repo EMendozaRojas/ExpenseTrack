@@ -22,7 +22,7 @@ from app.schemas.transaction import (
     TransactionUpdate,
     TransferCreate,
 )
-from app.services.categorizer import match_category
+from app.services.categorizer import match_category, uncategorized_category_id
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -89,6 +89,11 @@ def _check_category(db: Session, category_id: int | None, current_user: User) ->
     if category is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Categoría no encontrada"
+        )
+    if category.parent_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Una transacción debe asignarse a una subcategoría, no a la categoría principal",
         )
 
 
@@ -177,6 +182,8 @@ def create_transaction(
     category_id = payload.category_id
     if category_id is None:
         category_id = _autocategorize(db, current_user, payload.counterparty, payload.note)
+    if category_id is None:
+        category_id = uncategorized_category_id(db, payload.direction)
 
     transaction = Transaction(
         account_id=payload.account_id,
@@ -209,11 +216,14 @@ def update_transaction(
             detail="No se puede editar una transferencia; bórrala y créala de nuevo",
         )
     _check_category(db, payload.category_id, current_user)
+    category_id = payload.category_id
+    if category_id is None:
+        category_id = uncategorized_category_id(db, payload.direction)
 
     transaction.amount = payload.amount
     transaction.direction = payload.direction
     transaction.posted_at = payload.posted_at
-    transaction.category_id = payload.category_id
+    transaction.category_id = category_id
     transaction.counterparty = payload.counterparty
     transaction.note = payload.note
     db.commit()

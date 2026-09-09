@@ -32,12 +32,12 @@ def test_create_subcategory(client: TestClient, auth_headers) -> None:
 def test_reject_second_level_subcategory(client: TestClient, auth_headers) -> None:
     headers, _ = auth_headers()
     roots = client.get("/api/v1/categories/", params={"kind": "expense"}, headers=headers).json()
-    ocio = next(root for root in roots if root["name"] == "Ocio")
-    suscripciones = next(child for child in ocio["children"] if child["name"] == "Suscripciones")
+    suscripciones = next(root for root in roots if root["name"] == "Suscripciones")
+    streaming = next(child for child in suscripciones["children"] if child["name"] == "Streaming")
 
     response = client.post(
         "/api/v1/categories/",
-        json={"name": "Netflix", "kind": "expense", "parent_id": suscripciones["id"]},
+        json={"name": "Netflix", "kind": "expense", "parent_id": streaming["id"]},
         headers=headers,
     )
     assert response.status_code == 422
@@ -96,6 +96,10 @@ def test_delete_reassigns_transactions_and_subcategories(
     assert delete.status_code == 200
     assert delete.json() == {"reassigned_transactions": 1, "reassigned_subcategories": 0}
 
+    roots = client.get("/api/v1/categories/", params={"kind": "expense"}, headers=headers).json()
+    finanzas = next(r for r in roots if r["name"] == "Finanzas y Otros")
+    sin_clasificar = next(c for c in finanzas["children"] if c["name"] == "Sin Clasificar")
+
     updated_tx = client.get("/api/v1/transactions/", headers=headers).json()["items"]
     assert updated_tx[0]["id"] == tx["id"]
-    assert updated_tx[0]["category_id"] == root["id"]
+    assert updated_tx[0]["category_id"] == sin_clasificar["id"]

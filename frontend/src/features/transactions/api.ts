@@ -3,6 +3,7 @@ import type {
   Account,
   AccountInput,
   Category,
+  DashboardSummary,
   MonthlySummary,
   Transaction,
   TransactionInput,
@@ -62,4 +63,12 @@ export function getMonthlySummary(
   month: number,
 ): Promise<MonthlySummary> {
   return apiFetch<MonthlySummary>(`/expenses/summary?year=${year}&month=${month}`, token);
+}
+
+export function getDashboardSummary(
+  token: string,
+  year: number,
+  month: number,
+): Promise<DashboardSummary> {
+  return apiFetch<DashboardSummary>(`/dashboard/summary?year=${year}&month=${month}`, token);
 }

@@ -5,6 +5,7 @@ import {
   createCategory,
   createTransaction,
   deleteTransaction,
+  getDashboardSummary,
   getMonthlySummary,
   listAccounts,
   listCategories,
@@ -115,5 +116,26 @@ describe("transactions api", () => {
 
     const [url] = fetchMock.mock.calls[0];
     expect(url).toContain("/expenses/summary?year=2026&month=8");
+  });
+
+  it("getDashboardSummary consulta /dashboard/summary con year y month", async () => {
+    const fetchMock = mockFetchOnce({
+      year: 2026,
+      month: 8,
+      income_total: "0",
+      expense_total: "0",
+      net_total: "0",
+      net_status: "a_favor",
+      fixed_total: "0",
+      variable_total: "0",
+      by_category: [],
+      incomplete_data: false,
+      last_transaction_date: null,
+    });
+
+    await getDashboardSummary("token-123", 2026, 8);
+
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toContain("/dashboard/summary?year=2026&month=8");
   });
 });

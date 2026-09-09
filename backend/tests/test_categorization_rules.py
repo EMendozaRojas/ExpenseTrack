@@ -37,7 +37,7 @@ def test_rule_target_must_be_visible(client: TestClient, auth_headers) -> None:
 def test_list_update_and_delete_rule(client: TestClient, auth_headers) -> None:
     headers, _ = auth_headers()
     category_id = _find_category(client, headers, "expense", "Alimentación", "Supermercado")
-    other_category_id = _find_category(client, headers, "expense", "Ocio", "Aficiones")
+    other_category_id = _find_category(client, headers, "expense", "Ocio", "Juegos/Aficiones")
 
     created = client.post(
         "/api/v1/categorization-rules/",
@@ -170,6 +170,9 @@ def test_no_rule_matches_leaves_uncategorized(
 ) -> None:
     headers, user = auth_headers()
     account = make_account(user)
+    sin_clasificar_id = _find_category(
+        client, headers, "expense", "Finanzas y Otros", "Sin Clasificar"
+    )
 
     response = client.post(
         "/api/v1/transactions/",
@@ -182,7 +185,7 @@ def test_no_rule_matches_leaves_uncategorized(
         },
         headers=headers,
     )
-    assert response.json()["category_id"] is None
+    assert response.json()["category_id"] == sin_clasificar_id
 
     listed = client.get(
         "/api/v1/transactions/", params={"category_id": ""}, headers=headers
@@ -195,7 +198,7 @@ def test_manual_category_never_overridden_by_rules(
 ) -> None:
     headers, user = auth_headers()
     account = make_account(user)
-    ocio_id = _find_category(client, headers, "expense", "Ocio", "Aficiones")
+    ocio_id = _find_category(client, headers, "expense", "Ocio", "Juegos/Aficiones")
 
     response = client.post(
         "/api/v1/transactions/",
@@ -217,7 +220,7 @@ def test_preview_and_apply_fill_blanks_only(
 ) -> None:
     headers, user = auth_headers()
     account = make_account(user)
-    ocio_id = _find_category(client, headers, "expense", "Ocio", "Aficiones")
+    ocio_id = _find_category(client, headers, "expense", "Ocio", "Juegos/Aficiones")
     supermercado_id = _find_category(client, headers, "expense", "Alimentación", "Supermercado")
 
     already_categorized = client.post(
@@ -273,7 +276,10 @@ def test_bulk_categorize_overwrites_and_ignores_foreign_ids(
     headers_b, user_b = auth_headers()
     account_a = make_account(user_a)
     account_b = make_account(user_b)
-    ocio_id = _find_category(client, headers_a, "expense", "Ocio", "Aficiones")
+    ocio_id = _find_category(client, headers_a, "expense", "Ocio", "Juegos/Aficiones")
+    sin_clasificar_id = _find_category(
+        client, headers_b, "expense", "Finanzas y Otros", "Sin Clasificar"
+    )
 
     tx_a = client.post(
         "/api/v1/transactions/",
@@ -305,4 +311,4 @@ def test_bulk_categorize_overwrites_and_ignores_foreign_ids(
 
     items_b = client.get("/api/v1/transactions/", headers=headers_b).json()["items"]
     assert items_b[0]["id"] == tx_b["id"]
-    assert items_b[0]["category_id"] is None
+    assert items_b[0]["category_id"] == sin_clasificar_id

@@ -10,6 +10,7 @@ from app.models.category import Category
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.category import CategoryCreate, CategoryDeleteResult, CategoryRead
+from app.services.categorizer import uncategorized_category_id
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -35,6 +36,7 @@ def _to_read(category: Category, children: list[Category]) -> CategoryRead:
         icon=category.icon,
         color=category.color,
         is_system=category.is_system,
+        is_fixed=category.is_fixed,
         created_at=category.created_at,
         children=[_to_read(child, []) for child in children],
     )
@@ -105,6 +107,7 @@ def create_category(
         icon=payload.icon,
         color=payload.color,
         is_system=False,
+        is_fixed=payload.is_fixed,
     )
     db.add(category)
     db.commit()
@@ -133,10 +136,15 @@ def delete_category(
     for sub in subcategories:
         sub.parent_id = new_parent_id
 
+    # Las transacciones nunca quedan apuntando a una categoría raíz: se
+    # reasignan siempre a "Sin Clasificar" del kind correspondiente, tanto si
+    # se borra una subcategoría como si se borra una raíz con movimientos
+    # colgando directamente de ella (legado).
+    fallback_id = uncategorized_category_id(db, category.kind)
     reassigned_transactions = (
         db.query(Transaction)
         .filter(Transaction.category_id == category.id)
-        .update({"category_id": new_parent_id}, synchronize_session=False)
+        .update({"category_id": fallback_id}, synchronize_session=False)
     )
 
     db.delete(category)

@@ -8,7 +8,11 @@ def test_monthly_summary_groups_by_category(
 ) -> None:
     headers, user = auth_headers()
     account = make_account(user)
-    category = Category(name="Comida", owner_id=user.id)
+    root = Category(name="Comida raíz", owner_id=user.id)
+    db_session.add(root)
+    db_session.commit()
+    db_session.refresh(root)
+    category = Category(name="Comida", owner_id=user.id, parent_id=root.id)
     db_session.add(category)
     db_session.commit()
     db_session.refresh(category)

@@ -2,7 +2,11 @@ import re
 import unicodedata
 from collections.abc import Iterable
 
+from sqlalchemy.orm import Session
+
+from app.db.seed_categories import UNCATEGORIZED_EXPENSE, UNCATEGORIZED_INCOME
 from app.models.categorization_rule import CategorizationRule
+from app.models.category import Category
 
 _CARD_NUMBER_RE = re.compile(r"\d{4,}")
 _WHITESPACE_RE = re.compile(r"\s+")
@@ -78,3 +82,38 @@ def match_category(
         if _rule_matches(normalized_description, rule):
             return rule.category_id
     return None
+
+
+def uncategorized_category_id(db: Session, kind: str = "expense") -> int:
+    """Id de la subcategoría de sistema 'Sin Clasificar' para ese `kind`.
+
+    Toda transacción de income/expense debe apuntar a una subcategoría real
+    (regla de negocio confirmada en producto); esta es el destino por
+    defecto cuando ninguna regla de categorización aplica.
+    """
+    root_name, sub_name = UNCATEGORIZED_EXPENSE if kind == "expense" else UNCATEGORIZED_INCOME
+    root = (
+        db.query(Category)
+        .filter(
+            Category.name == root_name,
+            Category.parent_id.is_(None),
+            Category.is_system.is_(True),
+        )
+        .first()
+    )
+    category = (
+        db.query(Category)
+        .filter(
+            Category.name == sub_name,
+            Category.parent_id == root.id,
+            Category.is_system.is_(True),
+        )
+        .first()
+        if root is not None
+        else None
+    )
+    if category is None:
+        raise RuntimeError(
+            "Categoría 'Sin Clasificar' no encontrada; falta aplicar la migración de seed"
+        )
+    return category.id

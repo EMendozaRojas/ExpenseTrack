@@ -14,6 +14,7 @@ class CategoryCreate(BaseModel):
     parent_id: int | None = None
     icon: str | None = None
     color: str | None = None
+    is_fixed: bool = False
 
 
 class CategoryRead(BaseModel):
@@ -27,6 +28,7 @@ class CategoryRead(BaseModel):
     icon: str | None
     color: str | None
     is_system: bool
+    is_fixed: bool
     created_at: datetime
     children: list[CategoryRead] = []
 

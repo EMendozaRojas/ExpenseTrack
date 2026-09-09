@@ -7,6 +7,7 @@ export interface Category {
   icon: string | null;
   color: string | null;
   is_system: boolean;
+  is_fixed: boolean;
   created_at: string;
   children: Category[];
 }
@@ -77,4 +78,64 @@ export interface MonthlySummary {
   month: number;
   total: string;
   by_category: CategorySummary[];
+}
+
+export type NetStatus = "a_favor" | "en_contra";
+
+export interface DashboardCategoryNode {
+  category_id: number;
+  category_name: string;
+  icon: string | null;
+  color: string | null;
+  total: string;
+  subcategories: CategorySummary[];
+}
+
+export type ImportClassification = "NEW" | "EXACT_DUPLICATE" | "PROBABLE_DUPLICATE";
+export type ImportStrategy = "append_new" | "replace_range" | "replace_selected";
+
+export interface ImportRow {
+  id: number;
+  posted_at: string;
+  amount: string;
+  raw_description: string;
+  classification: ImportClassification;
+  matched_transaction_id: number | null;
+}
+
+export interface ImportPreview {
+  id: number;
+  account_id: number;
+  filename: string;
+  status: string;
+  range_start: string;
+  range_end: string;
+  created_at: string;
+  new_count: number;
+  exact_duplicate_count: number;
+  probable_duplicate_count: number;
+  rows: ImportRow[];
+}
+
+export interface ImportCommitResult {
+  id: number;
+  status: string;
+  strategy: ImportStrategy;
+  inserted_count: number;
+  replaced_count: number;
+  skipped_count: number;
+}
+
+export interface DashboardSummary {
+  year: number;
+  month: number;
+  income_total: string;
+  expense_total: string;
+  net_total: string;
+  net_status: NetStatus;
+  fixed_total: string;
+  variable_total: string;
+  by_category: DashboardCategoryNode[];
+  incomplete_data: boolean;
+  last_transaction_date: string | null;
 }

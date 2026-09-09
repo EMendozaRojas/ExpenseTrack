@@ -30,6 +30,7 @@ const categories: Category[] = [
     icon: null,
     color: null,
     is_system: true,
+    is_fixed: false,
     created_at: "2026-01-01T00:00:00Z",
     children: [],
   },
@@ -128,6 +129,7 @@ describe("TransactionForm", () => {
       icon: null,
       color: null,
       is_system: false,
+      is_fixed: false,
       created_at: "2026-08-13T00:00:00Z",
       children: [],
     });

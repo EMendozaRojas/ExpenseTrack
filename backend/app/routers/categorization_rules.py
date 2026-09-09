@@ -17,7 +17,7 @@ from app.schemas.categorization_rule import (
     RuleApplyResult,
     RulePreviewResult,
 )
-from app.services.categorizer import normalize
+from app.services.categorizer import normalize, uncategorized_category_id
 
 router = APIRouter(prefix="/categorization-rules", tags=["categorization-rules"])
 
@@ -182,12 +182,16 @@ def apply_rule(
     if rule is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Regla no encontrada")
 
+    uncategorized_ids = {
+        uncategorized_category_id(db, "expense"),
+        uncategorized_category_id(db, "income"),
+    }
     candidates = (
         db.query(Transaction)
         .filter(
             Transaction.owner_id == current_user.id,
             Transaction.deleted_at.is_(None),
-            Transaction.category_id.is_(None),
+            Transaction.category_id.in_(uncategorized_ids),
         )
         .all()
     )

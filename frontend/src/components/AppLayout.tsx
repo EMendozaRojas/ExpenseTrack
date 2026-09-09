@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from "react-router";
+import { NavLink, Outlet, useNavigate } from "react-router";
 
 import { useAuth } from "../features/auth/useAuth";
 
@@ -15,6 +15,20 @@ export function AppLayout() {
     <div className="app-shell">
       <header className="app-header">
         <span className="app-title">ExpenseTrack</span>
+        <nav className="app-nav">
+          <NavLink to="/" end className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
+            Dashboard
+          </NavLink>
+          <NavLink
+            to="/transactions"
+            className={({ isActive }) => (isActive ? "app-nav-active" : "")}
+          >
+            Movimientos
+          </NavLink>
+          <NavLink to="/imports" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
+            Importar
+          </NavLink>
+        </nav>
         {user && (
           <div className="app-header-user">
             <span className="app-header-email">{user.email}</span>
