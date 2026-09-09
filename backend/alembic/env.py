@@ -11,6 +11,7 @@ from app.models import (  # noqa: F401  (registran los modelos)
     CategorizationRule,
     Category,
     DismissedRecurringSeries,
+    FxRate,
     GoalContribution,
     ImportBatch,
     ImportRow,
@@ -18,6 +19,7 @@ from app.models import (  # noqa: F401  (registran los modelos)
     SavingsGoal,
     Transaction,
     User,
+    UserPreferences,
 )
 
 config = context.config

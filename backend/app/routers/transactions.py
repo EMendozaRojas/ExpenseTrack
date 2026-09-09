@@ -23,6 +23,7 @@ from app.schemas.transaction import (
     TransferCreate,
 )
 from app.services.categorizer import match_category, uncategorized_category_id
+from app.services.fx import MissingFxRateError, convert
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -176,7 +177,7 @@ def create_transaction(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> Transaction:
-    _get_owned_account(db, payload.account_id, current_user)
+    account = _get_owned_account(db, payload.account_id, current_user)
     _check_category(db, payload.category_id, current_user)
 
     category_id = payload.category_id
@@ -185,6 +186,18 @@ def create_transaction(
     if category_id is None:
         category_id = uncategorized_category_id(db, payload.direction)
 
+    currency = (payload.currency or account.currency).upper()
+    fx_rate = None
+    if currency == account.currency:
+        amount_in_account_currency = payload.amount
+    else:
+        try:
+            amount_in_account_currency, fx_rate = convert(
+                db, payload.amount, currency, account.currency, payload.posted_at
+            )
+        except MissingFxRateError as exc:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+
     transaction = Transaction(
         account_id=payload.account_id,
         owner_id=current_user.id,
@@ -192,6 +205,9 @@ def create_transaction(
         direction=payload.direction,
         posted_at=payload.posted_at,
         category_id=category_id,
+        currency=currency,
+        fx_rate_to_account_currency=fx_rate,
+        amount_in_account_currency=amount_in_account_currency,
         counterparty=payload.counterparty,
         note=payload.note,
         source="manual",

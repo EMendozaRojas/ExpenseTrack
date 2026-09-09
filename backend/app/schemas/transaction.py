@@ -16,6 +16,7 @@ class TransactionCreate(BaseModel):
     category_id: int | None = None
     counterparty: str | None = None
     note: str | None = None
+    currency: str | None = None
 
     @model_validator(mode="after")
     def check_amount_sign(self) -> "TransactionCreate":
@@ -61,6 +62,9 @@ class TransactionRead(BaseModel):
     raw_description: str | None
     note: str | None
     source: str
+    currency: str
+    fx_rate_to_account_currency: Decimal | None
+    amount_in_account_currency: Decimal | None
     transfer_group_id: UUID | None
     created_at: datetime
     updated_at: datetime
