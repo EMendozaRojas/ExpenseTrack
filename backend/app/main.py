@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.routers import (
     accounts,
+    attachments,
     auth,
     budgets,
     categories,
@@ -43,6 +44,7 @@ app.include_router(insights.router, prefix="/api/v1")
 app.include_router(goals.router, prefix="/api/v1")
 app.include_router(preferences.router, prefix="/api/v1")
 app.include_router(fx_rates.router, prefix="/api/v1")
+app.include_router(attachments.router, prefix="/api/v1")
 
 
 @app.get("/health")

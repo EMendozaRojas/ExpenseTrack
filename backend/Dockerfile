@@ -16,7 +16,7 @@ FROM base AS dev
 RUN pip install --no-cache-dir -r requirements-dev.txt
 
 COPY . .
-RUN chown -R appuser:appuser /app
+RUN mkdir -p /app/storage/attachments && chown -R appuser:appuser /app
 
 USER appuser
 

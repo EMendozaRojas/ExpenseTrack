@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 60
     backend_cors_origins: str = "http://localhost:5173"
 
+    attachments_dir: str = "/app/storage/attachments"
+
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.backend_cors_origins.split(",")]

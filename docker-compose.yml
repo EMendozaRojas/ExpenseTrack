@@ -30,6 +30,7 @@ services:
       - ./backend/alembic:/app/alembic
       - ./backend/tests:/app/tests
       - ./backend/pyproject.toml:/app/pyproject.toml
+      - attachments_data:/app/storage
     ports:
       - "8000:8000"
     depends_on:
@@ -56,3 +57,4 @@ services:
 
 volumes:
   postgres_data:
+  attachments_data:

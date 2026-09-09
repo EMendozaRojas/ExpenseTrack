@@ -5,13 +5,26 @@ from fastapi.testclient import TestClient
 from sqlalchemy import event
 from sqlalchemy.orm import Session, sessionmaker
 
+import app.services.storage as storage
 from app.auth.security import create_access_token, hash_password
 from app.core.database import engine, get_db
 from app.main import app
 from app.models.account import Account
 from app.models.user import User
+from app.services.storage import LocalStorageBackend
 
 TestingSessionLocal = sessionmaker(bind=engine)
+
+
+@pytest.fixture(autouse=True)
+def isolated_storage_backend(tmp_path) -> Generator[None, None, None]:
+    """Los adjuntos de los tests van a un directorio temporal, no al
+    storage real de desarrollo (los rollbacks de `db_session` no deshacen
+    escrituras a disco)."""
+    original_backend = storage._backend
+    storage._backend = LocalStorageBackend(str(tmp_path / "attachments"))
+    yield
+    storage._backend = original_backend
 
 
 @pytest.fixture

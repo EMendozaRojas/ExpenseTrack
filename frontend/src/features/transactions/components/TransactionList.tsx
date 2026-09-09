@@ -1,3 +1,6 @@
+import { Fragment, useState } from "react";
+
+import { AttachmentsPanel } from "../../attachments/AttachmentsPanel";
 import { formatSignedCurrency } from "../format";
 import type { Transaction } from "../types";
 
@@ -14,6 +17,8 @@ export function TransactionList({
   onDelete,
   isDeleting,
 }: TransactionListProps) {
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
   if (transactions.length === 0) {
     return <p className="page-status">No hay movimientos registrados este mes.</p>;
   }
@@ -33,32 +38,49 @@ export function TransactionList({
         {transactions.map((transaction) => {
           const amount = Number(transaction.amount);
           const sign = amount < 0 ? "expense" : "income";
+          const isExpanded = expandedId === transaction.id;
           return (
-            <tr key={transaction.id}>
-              <td>{transaction.posted_at}</td>
-              <td>{transaction.note ?? transaction.raw_description ?? "—"}</td>
-              <td>
-                {transaction.category_id !== null
-                  ? (categoriesById.get(transaction.category_id) ?? "—")
-                  : "Sin categoría"}
-              </td>
-              <td className={`expense-table-amount expense-table-amount--${sign}`}>
-                {amount < 0 ? "-" : "+"}
-                {formatSignedCurrency(amount)}
-              </td>
-              <td>
-                {transaction.direction !== "transfer" && (
+            <Fragment key={transaction.id}>
+              <tr>
+                <td>{transaction.posted_at}</td>
+                <td>{transaction.note ?? transaction.raw_description ?? "—"}</td>
+                <td>
+                  {transaction.category_id !== null
+                    ? (categoriesById.get(transaction.category_id) ?? "—")
+                    : "Sin categoría"}
+                </td>
+                <td className={`expense-table-amount expense-table-amount--${sign}`}>
+                  {amount < 0 ? "-" : "+"}
+                  {formatSignedCurrency(amount)}
+                </td>
+                <td className="expense-table-actions">
                   <button
                     type="button"
                     className="button-secondary"
-                    disabled={isDeleting}
-                    onClick={() => onDelete(transaction.id)}
+                    onClick={() => setExpandedId(isExpanded ? null : transaction.id)}
                   >
-                    Eliminar
+                    {isExpanded ? "Ocultar adjuntos" : "Adjuntos"}
                   </button>
-                )}
-              </td>
-            </tr>
+                  {transaction.direction !== "transfer" && (
+                    <button
+                      type="button"
+                      className="button-secondary"
+                      disabled={isDeleting}
+                      onClick={() => onDelete(transaction.id)}
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                </td>
+              </tr>
+              {isExpanded && (
+                <tr>
+                  <td colSpan={5}>
+                    <AttachmentsPanel transactionId={transaction.id} />
+                  </td>
+                </tr>
+              )}
+            </Fragment>
           );
         })}
       </tbody>
