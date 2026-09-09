@@ -11,6 +11,7 @@ from app.routers import (
     dashboard,
     expenses,
     imports,
+    insights,
     transactions,
 )
 
@@ -35,6 +36,7 @@ app.include_router(expenses.router, prefix="/api/v1")
 app.include_router(dashboard.router, prefix="/api/v1")
 app.include_router(imports.router, prefix="/api/v1")
 app.include_router(budgets.router, prefix="/api/v1")
+app.include_router(insights.router, prefix="/api/v1")
 
 
 @app.get("/health")

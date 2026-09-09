@@ -520,6 +520,79 @@ label {
   width: 90px;
 }
 
+/* Insights */
+
+.insights-page {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.insights-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.insights-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.recurring-list,
+.ant-spending-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.recurring-card,
+.ant-spending-card {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.6rem 0.9rem;
+}
+
+.recurring-card-dismissed {
+  opacity: 0.5;
+}
+
+.recurring-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.recurring-card-label {
+  font-weight: 600;
+}
+
+.recurring-card-amount {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.insights-settings-form {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  max-width: 480px;
+}
+
+.insights-settings-form button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
 /* Expense table */
 
 .expense-table {

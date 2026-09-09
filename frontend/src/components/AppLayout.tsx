@@ -31,6 +31,9 @@ export function AppLayout() {
           <NavLink to="/budgets" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
             Presupuestos
           </NavLink>
+          <NavLink to="/insights" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
+            Insights
+          </NavLink>
         </nav>
         {user && (
           <div className="app-header-user">

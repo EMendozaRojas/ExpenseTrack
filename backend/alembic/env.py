@@ -10,8 +10,10 @@ from app.models import (  # noqa: F401  (registran los modelos)
     Budget,
     CategorizationRule,
     Category,
+    DismissedRecurringSeries,
     ImportBatch,
     ImportRow,
+    InsightSettings,
     Transaction,
     User,
 )

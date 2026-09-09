@@ -119,6 +119,35 @@ export interface BudgetInput {
   amount: string;
 }
 
+export interface RecurringSeries {
+  key: string;
+  label: string;
+  direction: "income" | "expense";
+  category_id: number | null;
+  category_name: string | null;
+  occurrences: number;
+  avg_amount: string;
+  cadence_days: number;
+  cadence_label: string;
+  first_posted_at: string;
+  last_posted_at: string;
+  dismissed: boolean;
+}
+
+export interface AntSpendingGroup {
+  category_id: number;
+  category_name: string;
+  occurrences: number;
+  aggregate: string;
+  avg_amount: string;
+}
+
+export interface InsightSettings {
+  ant_max_amount: string;
+  ant_min_occurrences: number;
+  ant_min_aggregate: string;
+}
+
 export type ImportClassification = "NEW" | "EXACT_DUPLICATE" | "PROBABLE_DUPLICATE";
 export type ImportStrategy = "append_new" | "replace_range" | "replace_selected";
 
