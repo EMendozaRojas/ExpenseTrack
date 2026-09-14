@@ -2,17 +2,23 @@
 
 ## ¿Qué hace este proyecto?
 
-Aplicación web personal para gestionar gastos mensuales. Permite registrar
-gastos, asignarles una categoría, y ver un resumen/clasificación de gastos
-agrupados por mes (cuánto se gastó, en qué categorías, evolución mes a mes).
+Aplicación web personal para gestionar finanzas: cuentas, transacciones,
+categorías (con reglas de categorización automática), presupuestos, metas
+de ahorro, multi-moneda, adjuntos de recibos, importación de extractos
+bancarios en CSV, y un dashboard mensual con insights (gastos recurrentes,
+"gasto hormiga"). Ha crecido más allá de un simple registro de gastos hacia
+una herramienta de finanzas personales.
 
 Objetivo del proyecto: además de ser una herramienta de uso personal, sirve
 como proyecto de aprendizaje de desarrollo asistido por IA (Python + FastAPI
 + React), orientado a construir portafolio para búsqueda de empleo en Madrid.
 
-**Estado:** en fase de diseño inicial. Aún no hay código — este documento es
-el primer artefacto del proyecto y se irá corrigiendo a medida que se tomen
-más decisiones.
+**Estado:** en desarrollo activo. El backend tiene API, modelos, migraciones
+y tests para todas las features listadas abajo; el frontend tiene estructura
+de API client, componentes y features con tests, aunque va por detrás del
+backend en cobertura. Las features se planifican y documentan como "changes"
+en `openspec/changes/` antes de implementarse (ver esa carpeta para el
+roadmap y el detalle de cada feature).
 
 ## Tecnologías
 
@@ -23,31 +29,47 @@ más decisiones.
 | Base de datos | PostgreSQL | corre en contenedor Docker |
 | ORM / migraciones | SQLAlchemy + Alembic | estándar de la industria para FastAPI |
 | Gestor de dependencias (Python) | pip + requirements.txt | |
-| Autenticación | JWT (ej. `python-jose`) + hash de contraseñas (`passlib`) | multiusuario desde el inicio |
+| Autenticación | JWT (`python-jose`) + hash de contraseñas (`passlib`/`bcrypt`) + login social con Google (OAuth) y refresh tokens | multiusuario desde el inicio |
 | Orquestación local | Docker Compose | levanta frontend, backend y db juntos; solo local por ahora, sin despliegue previsto |
-| Tests backend | pytest | |
-| Tests frontend | Vitest + React Testing Library | |
+| Tests backend | pytest | 15 módulos de test (auth, cuentas, transacciones, presupuestos, metas, multi-moneda, adjuntos, importaciones, insights, dashboard, login social, reglas de categorización...) |
+| Tests frontend | Vitest + React Testing Library | con reporte de cobertura (`vitest --coverage`) |
+| Routing frontend | React Router | |
+| Data fetching frontend | TanStack Query | |
+| Planificación de features | OpenSpec (`openspec/changes/`) | cada feature se propone y documenta como "change" antes de implementarse |
 
-## Estructura de carpetas (propuesta)
+## Estructura de carpetas (real)
 
 ```
 ExpenseTrack/
 ├── CLAUDE.md
+├── BUENAS_PRACTICAS.md
 ├── docker-compose.yml
+├── .env.example
+├── openspec/            # propuestas y specs de cada feature (fuente de verdad del roadmap)
+│   └── changes/
 ├── backend/
 │   ├── app/
-│   │   ├── auth/       # login, JWT, hash de contraseñas
-│   │   ├── models/     # modelos SQLAlchemy (User, Expense, Category)
-│   │   ├── schemas/    # esquemas Pydantic
-│   │   ├── routers/    # endpoints (auth, expenses, categories)
+│   │   ├── auth/        # login, JWT, hash de contraseñas
+│   │   ├── core/        # config y conexión a la base de datos
+│   │   ├── db/          # seed de categorías
+│   │   ├── models/      # modelos SQLAlchemy (user, account, transaction, category,
+│   │   │                #   budget, savings_goal, attachment, fx_rate, import_batch...)
+│   │   ├── schemas/     # esquemas Pydantic
+│   │   ├── routers/     # endpoints (auth, accounts, transactions, categories,
+│   │   │                #   budgets, goals, attachments, imports, insights, dashboard...)
+│   │   ├── services/    # lógica de negocio (categorizador, FX, OAuth de Google,
+│   │   │                #   parser de extractos, detector de recurrentes, storage...)
 │   │   └── main.py
-│   ├── alembic/        # migraciones
-│   ├── tests/
+│   ├── alembic/         # migraciones
+│   ├── scripts/         # seed de datos de prueba
+│   ├── tests/           # 15 módulos de test con pytest
 │   ├── requirements.txt
 │   └── Dockerfile
 └── frontend/
     ├── src/
-    ├── tests/
+    │   ├── api/          # cliente de la API
+    │   ├── components/
+    │   └── features/
     ├── package.json
     └── Dockerfile
 ```
@@ -60,8 +82,9 @@ mercado 2026 para este stack.
 
 ## Cómo se corre en local
 
-> Pendiente de confirmar puertos y variables de entorno exactas cuando se
-> cree el `docker-compose.yml`.
+Copiar `.env.example` a `.env` y ajustar valores (`.env` nunca se commitea).
+Las variables de Google OAuth son opcionales: sin ellas, el login social
+simplemente responde 503 y el resto de la app funciona igual.
 
 ```bash
 docker compose up --build
@@ -70,6 +93,8 @@ docker compose up --build
 - Frontend: http://localhost:5173
 - Backend (API + docs): http://localhost:8000/docs
 - Postgres: localhost:5432 (solo accesible desde los contenedores/host, no expuesto públicamente)
+
+Para cargar datos de prueba realistas: `backend/scripts/seed_demo_data.py`.
 
 ## Cómo se corren los tests
 
@@ -104,3 +129,11 @@ docker compose exec frontend npm test
 - Sin despliegue previsto por ahora — uso solo en local, pero todo
   completamente dockerizado (frontend, backend y base de datos) desde el
   principio, para que correrlo sea siempre `docker compose up`.
+- El alcance creció de "registro de gastos" a "finanzas personales": cuentas,
+  transacciones, multi-moneda, presupuestos, metas de ahorro, adjuntos e
+  importación de extractos bancarios.
+- Autenticación ampliada con login social (Google OAuth) y refresh tokens,
+  además del login con email/contraseña original.
+- Cada feature se planifica primero como "change" en `openspec/changes/`
+  (propuesta + specs + tareas) antes de implementarse, para mantener
+  trazabilidad de decisiones de diseño.
