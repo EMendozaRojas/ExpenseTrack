@@ -17,7 +17,6 @@ from app.models import (  # noqa: F401  (registran los modelos)
     GoalContribution,
     ImportBatch,
     ImportRow,
-    InsightSettings,
     RefreshToken,
     SavingsGoal,
     Transaction,

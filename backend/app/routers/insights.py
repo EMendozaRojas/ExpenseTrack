@@ -10,9 +10,9 @@ from app.auth.dependencies import get_current_user
 from app.core.database import get_db
 from app.models.category import Category
 from app.models.dismissed_recurring_series import DismissedRecurringSeries
-from app.models.insight_settings import InsightSettings
 from app.models.transaction import Transaction
 from app.models.user import User
+from app.models.user_preference import UserPreferences
 from app.schemas.insights import (
     AntSpendingGroup,
     DismissRequest,
@@ -27,14 +27,16 @@ router = APIRouter(prefix="/insights", tags=["insights"])
 RECURRING_WINDOW_MONTHS = 6
 
 
-def _get_or_create_settings(db: Session, current_user: User) -> InsightSettings:
-    settings = db.query(InsightSettings).filter(InsightSettings.owner_id == current_user.id).first()
-    if settings is None:
-        settings = InsightSettings(owner_id=current_user.id)
-        db.add(settings)
+def _get_or_create_preferences(db: Session, current_user: User) -> UserPreferences:
+    preferences = (
+        db.query(UserPreferences).filter(UserPreferences.owner_id == current_user.id).first()
+    )
+    if preferences is None:
+        preferences = UserPreferences(owner_id=current_user.id)
+        db.add(preferences)
         db.commit()
-        db.refresh(settings)
-    return settings
+        db.refresh(preferences)
+    return preferences
 
 
 def _month_range(year: int, month: int) -> tuple[date, date]:
@@ -128,7 +130,7 @@ def ant_spending(
     year: Annotated[int, Query(ge=2000, le=2100)],
     month: Annotated[int, Query(ge=1, le=12)],
 ) -> list[AntSpendingGroup]:
-    settings = _get_or_create_settings(db, current_user)
+    preferences = _get_or_create_preferences(db, current_user)
     range_start, range_end = _month_range(year, month)
 
     rows = (
@@ -145,7 +147,7 @@ def ant_spending(
             Transaction.direction == "expense",
             Transaction.posted_at >= range_start,
             Transaction.posted_at < range_end,
-            (-Transaction.amount) <= settings.ant_max_amount,
+            (-Transaction.amount) <= preferences.ant_max_amount,
         )
         .group_by(Category.id, Category.name)
         .all()
@@ -160,7 +162,7 @@ def ant_spending(
             avg_amount=(aggregate / count).quantize(Decimal("0.01")),
         )
         for category_id, category_name, count, aggregate in rows
-        if count >= settings.ant_min_occurrences and aggregate >= settings.ant_min_aggregate
+        if count >= preferences.ant_min_occurrences and aggregate >= preferences.ant_min_aggregate
     ]
     groups.sort(key=lambda g: g.aggregate, reverse=True)
     return groups
@@ -171,7 +173,7 @@ def get_settings(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> InsightSettingsRead:
-    return InsightSettingsRead.model_validate(_get_or_create_settings(db, current_user))
+    return InsightSettingsRead.model_validate(_get_or_create_preferences(db, current_user))
 
 
 @router.patch("/settings", response_model=InsightSettingsRead)
@@ -180,13 +182,13 @@ def update_settings(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> InsightSettingsRead:
-    settings = _get_or_create_settings(db, current_user)
+    preferences = _get_or_create_preferences(db, current_user)
     if payload.ant_max_amount is not None:
-        settings.ant_max_amount = payload.ant_max_amount
+        preferences.ant_max_amount = payload.ant_max_amount
     if payload.ant_min_occurrences is not None:
-        settings.ant_min_occurrences = payload.ant_min_occurrences
+        preferences.ant_min_occurrences = payload.ant_min_occurrences
     if payload.ant_min_aggregate is not None:
-        settings.ant_min_aggregate = payload.ant_min_aggregate
+        preferences.ant_min_aggregate = payload.ant_min_aggregate
     db.commit()
-    db.refresh(settings)
-    return InsightSettingsRead.model_validate(settings)
+    db.refresh(preferences)
+    return InsightSettingsRead.model_validate(preferences)
