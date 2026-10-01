@@ -89,9 +89,11 @@ Ver `proposal.md` — Why. Depende de `accounts-and-transactions` y `hierarchica
 3. `docker-compose.yml`: añadir el service `scheduler`. Dependencia nueva `apscheduler` en `requirements.txt`.
 4. Rollback: `downgrade` elimina las tablas nuevas; quitar el service `scheduler`.
 
+### D10 — Canal de entrega de alertas — CONFIRMADO
+- Solo aviso dentro de la app (badge/indicador in-app). No se agrega email ni push por ahora — evita montar infraestructura de envío de correo que el proyecto no tiene. Revisitable si en el uso real hace falta.
+
 ## Open Questions
 
-- Canal de entrega de alertas (badge in-app ya; push/email después) — no cambia el spec de registro de la alerta.
 - Versionar `amount`/`rollover` por mes (historial de presupuestos): descartado en el MVP; migrable a ello si el `rollover` retroactivo resulta molesto en uso real.
 - `GET /goals/suggestions` (presets de metas calculados en backend, D9): pospuesto; el MVP los calcula en el frontend desde `/stats`.
 - ¿La comparación `over_typical` de la recomendación (D6) usa la banda de la categoría raíz también para las subcategorías, o solo para raíces? Propuesta: solo raíces; para subcategorías se omite `over_typical`.

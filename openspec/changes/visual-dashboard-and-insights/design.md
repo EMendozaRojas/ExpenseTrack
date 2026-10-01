@@ -69,11 +69,22 @@ Ver `proposal.md` — Why. Depende de `accounts-and-transactions` y `hierarchica
 3. Eliminar la ruta `GET /expenses/summary` y su router/tests (tarea de implementación, no de esquema).
 4. Rollback: `downgrade` elimina las tablas nuevas.
 
+### D10 — Selector de rango sincronizado con la URL — CONFIRMADO
+- El rango de fechas del dashboard (año/mes) se refleja en la querystring (`?year=2026&month=9`). Permite compartir o recargar una vista concreta sin perder el filtro. Solo frontend, no cambia specs del backend.
+
+### D11 — Caché de `stats` con react-query — CONFIRMADO
+- Las queries de `react-query` para las estadísticas del dashboard usan `staleTime` alto (5 min) para no repetir la misma consulta al backend al navegar entre pantallas. Solo frontend, no cambia specs del backend.
+
+### D12 — `insight_settings` fusionado en `user_preferences` — CONFIRMADO
+- Se elimina la tabla `insight_settings`; sus tres columnas (`ant_max_amount`, `ant_min_occurrences`, `ant_min_aggregate`) pasan a `user_preferences` (migración `d3a1c9f7e5b2`, con copia de datos existentes). Una sola tabla de "configuración del usuario" en vez de dos.
+- Los endpoints `GET/PATCH /insights/settings` no cambian de contrato; solo cambia el almacenamiento interno. `GET/PATCH /users/me/preferences` tampoco expone los campos de insights — siguen siendo dos endpoints con responsabilidades separadas sobre la misma tabla.
+
+### D13 — `over_typical` solo en categorías raíz — CONFIRMADO
+- Se mantiene como estaba: la comparación contra la banda de referencia (`over_typical`) solo aplica a categorías raíz. Las subcategorías no tienen banda propia — el histórico suele ser insuficiente para que sea confiable. No requiere cambios.
+
 ## Open Questions
 
-- ¿El selector de rango del dashboard se sincroniza con la URL (querystring) para compartir vistas? Solo frontend.
-- ¿Se cachean las respuestas de `stats` por `(usuario, rango, granularidad)` con `react-query` con `staleTime` alto? Ajuste de frontend, no cambia specs.
-- ¿`insight_settings` se fusiona con `user_preferences` cuando llegue `multicurrency-social-auth-attachments`, o queda como tabla separada? No bloquea; son aditivas y se puede migrar después.
+(ninguna abierta por ahora)
 
 ## Apéndice A — Marcos financieros de referencia
 

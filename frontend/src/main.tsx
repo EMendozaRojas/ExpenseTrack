@@ -6,7 +6,13 @@ import { BrowserRouter } from "react-router";
 import App from "./App.tsx";
 import "./index.css";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+    },
+  },
+});
 
 const rootElement = document.getElementById("root");
 if (!rootElement) {

@@ -1,5 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as api from "../transactions/api";
@@ -11,13 +13,15 @@ vi.mock("../auth/useAuth", () => ({
   useAuth: () => ({ token: "test-token", user: { id: 1, email: "demo@example.com" } }),
 }));
 
-function renderPage() {
+function renderPage(initialEntries: string[] = ["/"]) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <DashboardPage />
+      <MemoryRouter initialEntries={initialEntries}>
+        <DashboardPage />
+      </MemoryRouter>
     </QueryClientProvider>,
   );
 }
@@ -82,5 +86,53 @@ describe("DashboardPage", () => {
 
     expect(await screen.findByRole("status")).toHaveTextContent("Datos incompletos");
     expect(screen.getByText(/En contra/)).toBeInTheDocument();
+  });
+
+  it("lee el año/mes desde la URL y los usa para pedir el resumen", async () => {
+    const summary: DashboardSummary = {
+      year: 2026,
+      month: 3,
+      income_total: "0",
+      expense_total: "0",
+      net_total: "0",
+      net_status: "a_favor",
+      fixed_total: "0",
+      variable_total: "0",
+      by_category: [],
+      incomplete_data: false,
+      last_transaction_date: null,
+    };
+    vi.mocked(api.getDashboardSummary).mockResolvedValue(summary);
+
+    renderPage(["/?year=2026&month=3"]);
+
+    await screen.findByText(/marzo 2026/);
+    expect(api.getDashboardSummary).toHaveBeenCalledWith("test-token", 2026, 3);
+  });
+
+  it("actualiza la URL al cambiar de mes", async () => {
+    const user = userEvent.setup();
+    const summary: DashboardSummary = {
+      year: 2026,
+      month: 9,
+      income_total: "0",
+      expense_total: "0",
+      net_total: "0",
+      net_status: "a_favor",
+      fixed_total: "0",
+      variable_total: "0",
+      by_category: [],
+      incomplete_data: false,
+      last_transaction_date: null,
+    };
+    vi.mocked(api.getDashboardSummary).mockResolvedValue(summary);
+
+    renderPage(["/?year=2026&month=9"]);
+    await screen.findByText(/septiembre 2026/);
+
+    await user.click(screen.getByLabelText("Mes siguiente"));
+
+    await screen.findByText(/octubre 2026/);
+    expect(api.getDashboardSummary).toHaveBeenCalledWith("test-token", 2026, 10);
   });
 });

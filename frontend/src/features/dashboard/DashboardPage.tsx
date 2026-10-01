@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useSearchParams } from "react-router";
 
 import { useAuth } from "../auth/useAuth";
 import { getDashboardSummary } from "../transactions/api";
@@ -9,15 +9,27 @@ import { formatCurrency } from "../transactions/format";
 
 const today = new Date();
 
+function parseParam(value: string | null, min: number, max: number, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isInteger(parsed) && parsed >= min && parsed <= max ? parsed : fallback;
+}
+
 export function DashboardPage() {
   const { token } = useAuth();
-  const [year, setYear] = useState(today.getFullYear());
-  const [month, setMonth] = useState(today.getMonth() + 1);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const year = parseParam(searchParams.get("year"), 1, 9999, today.getFullYear());
+  const month = parseParam(searchParams.get("month"), 1, 12, today.getMonth() + 1);
+
+  function handleMonthChange(newYear: number, newMonth: number) {
+    setSearchParams({ year: String(newYear), month: String(newMonth) });
+  }
 
   const summaryQuery = useQuery({
     queryKey: ["dashboard-summary", year, month],
     queryFn: () => getDashboardSummary(token as string, year, month),
     enabled: token !== null,
+    staleTime: 5 * 60 * 1000,
   });
 
   const summary = summaryQuery.data;
@@ -27,10 +39,7 @@ export function DashboardPage() {
       <MonthNavigator
         year={year}
         month={month}
-        onChange={(newYear, newMonth) => {
-          setYear(newYear);
-          setMonth(newMonth);
-        }}
+        onChange={handleMonthChange}
       />
 
       {summaryQuery.isLoading && <p className="page-status">Cargando dashboard...</p>}
