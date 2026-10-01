@@ -4,11 +4,13 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as preferencesApi from "../preferences/api";
 import * as api from "./api";
 import { AuthProvider } from "./AuthContext";
 import { RegisterPage } from "./RegisterPage";
 
 vi.mock("./api");
+vi.mock("../preferences/api");
 
 function renderRegisterPage() {
   const queryClient = new QueryClient();
@@ -58,18 +60,26 @@ describe("RegisterPage", () => {
       email: "demo@example.com",
       created_at: "2026-01-01T00:00:00Z",
     });
+    vi.mocked(preferencesApi.updatePreferences).mockResolvedValue({
+      base_currency: "USD",
+      locale: "es-ES",
+    });
 
     renderRegisterPage();
 
     await user.type(screen.getByLabelText("Email"), "demo@example.com");
     await user.type(screen.getByLabelText("Contraseña"), "secret123");
     await user.type(screen.getByLabelText("Confirmar contraseña"), "secret123");
+    await user.selectOptions(screen.getByLabelText("Moneda principal"), "USD");
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
 
     expect(await screen.findByText("Página principal")).toBeInTheDocument();
     expect(api.register).toHaveBeenCalledWith({
       email: "demo@example.com",
       password: "secret123",
+    });
+    expect(preferencesApi.updatePreferences).toHaveBeenCalledWith("abc123", {
+      base_currency: "USD",
     });
   });
 });

@@ -37,6 +37,12 @@ export function AppLayout() {
           <NavLink to="/goals" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
             Metas
           </NavLink>
+          <NavLink to="/settings" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
+            Configuración
+          </NavLink>
+          <NavLink to="/trash" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
+            Papelera
+          </NavLink>
         </nav>
         {user && (
           <div className="app-header-user">

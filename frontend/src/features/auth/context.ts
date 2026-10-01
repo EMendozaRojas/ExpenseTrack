@@ -7,7 +7,7 @@ export interface AuthContextValue {
   token: string | null;
   isLoading: boolean;
   login: (credentials: Credentials) => Promise<void>;
-  register: (credentials: Credentials) => Promise<void>;
+  register: (credentials: Credentials, baseCurrency?: string) => Promise<void>;
   loginWithTokens: (accessToken: string, refreshToken: string | null) => void;
   logout: () => void;
 }

@@ -8,6 +8,7 @@ import type {
   Transaction,
   TransactionInput,
   TransactionPage,
+  TrashedTransaction,
 } from "./types";
 
 export function listCategories(token: string): Promise<Category[]> {
@@ -55,6 +56,16 @@ export function createTransaction(
 
 export function deleteTransaction(token: string, transactionId: number): Promise<void> {
   return apiFetch<void>(`/transactions/${transactionId}`, token, { method: "DELETE" });
+}
+
+export function listTrash(token: string): Promise<TrashedTransaction[]> {
+  return apiFetch<TrashedTransaction[]>("/transactions/trash", token);
+}
+
+export function restoreTransaction(token: string, transactionId: number): Promise<Transaction> {
+  return apiFetch<Transaction>(`/transactions/${transactionId}/restore`, token, {
+    method: "POST",
+  });
 }
 
 export function getMonthlySummary(

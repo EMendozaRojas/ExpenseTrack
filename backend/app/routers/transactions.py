@@ -1,6 +1,6 @@
 import base64
 import uuid
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -19,11 +19,13 @@ from app.schemas.transaction import (
     TransactionCreate,
     TransactionPage,
     TransactionRead,
+    TransactionTrashRead,
     TransactionUpdate,
     TransferCreate,
 )
 from app.services.categorizer import match_category, uncategorized_category_id
 from app.services.fx import MissingFxRateError, convert
+from app.services.transaction_retention import RETENTION_DAYS, purge_expired_transactions
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -253,6 +255,7 @@ def delete_transaction(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
+    purge_expired_transactions(db)
     transaction = _get_owned_transaction(db, transaction_id, current_user)
     now = datetime.now(tz=transaction.created_at.tzinfo)
     if transaction.transfer_group_id is not None:
@@ -270,6 +273,77 @@ def delete_transaction(
     else:
         transaction.deleted_at = now
     db.commit()
+
+
+def _get_owned_trashed_transaction(
+    db: Session, transaction_id: int, current_user: User
+) -> Transaction:
+    transaction = (
+        db.query(Transaction)
+        .filter(
+            Transaction.id == transaction_id,
+            Transaction.owner_id == current_user.id,
+            Transaction.deleted_at.isnot(None),
+        )
+        .first()
+    )
+    if transaction is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Movimiento no encontrado en la papelera"
+        )
+    return transaction
+
+
+@router.get("/trash", response_model=list[TransactionTrashRead])
+def list_trash(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> list[TransactionTrashRead]:
+    purge_expired_transactions(db)
+    rows = (
+        db.query(Transaction)
+        .filter(Transaction.owner_id == current_user.id, Transaction.deleted_at.isnot(None))
+        .order_by(Transaction.deleted_at.desc())
+        .all()
+    )
+    items = []
+    for row in rows:
+        base = TransactionRead.model_validate(row).model_dump()
+        items.append(
+            TransactionTrashRead(
+                **base,
+                deleted_at=row.deleted_at,
+                purge_at=row.deleted_at + timedelta(days=RETENTION_DAYS),
+            )
+        )
+    return items
+
+
+@router.post("/{transaction_id}/restore", response_model=TransactionRead)
+def restore_transaction(
+    transaction_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> Transaction:
+    purge_expired_transactions(db)
+    transaction = _get_owned_trashed_transaction(db, transaction_id, current_user)
+    if transaction.transfer_group_id is not None:
+        siblings = (
+            db.query(Transaction)
+            .filter(
+                Transaction.transfer_group_id == transaction.transfer_group_id,
+                Transaction.owner_id == current_user.id,
+                Transaction.deleted_at.isnot(None),
+            )
+            .all()
+        )
+        for sibling in siblings:
+            sibling.deleted_at = None
+    else:
+        transaction.deleted_at = None
+    db.commit()
+    db.refresh(transaction)
+    return transaction
 
 
 @router.post("/transfer", response_model=list[TransactionRead], status_code=status.HTTP_201_CREATED)

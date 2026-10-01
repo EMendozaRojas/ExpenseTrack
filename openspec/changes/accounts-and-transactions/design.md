@@ -57,6 +57,13 @@ Ver `proposal.md` — Why. Estado actual: modelo `User` / `Category` / `Expense`
 ### D8 — Paginación — CONFIRMADO
 - `GET /transactions` con `limit` (default **50**, máx 200) + `cursor` (keyset sobre `(posted_at DESC, id DESC)`), no offset. La respuesta es un envelope `{ items, next_cursor }`.
 
+### D9 — Papelera con caducidad — CONFIRMADO
+- El `DELETE /transactions/{id}` ya hacía soft-delete (`deleted_at`); se añade la capacidad de recuperarlo.
+- Retención: **30 días** desde `deleted_at`. Dentro de ese plazo, `GET /transactions/trash` lista los movimientos borrados del usuario (con `deleted_at` y `purge_at` calculado) y `POST /transactions/{id}/restore` los recupera (limpia `deleted_at`). Si es una pata de transferencia, se restauran ambas, igual que al borrar.
+- Pasados los 30 días, el movimiento se borra **en firme** (fila eliminada, no recuperable) junto con sus adjuntos (ver `D10` en `multicurrency-social-auth-attachments/design.md`): se borra la fila `attachments` y el archivo en el storage backend.
+- Disparo del purgado: **perezoso**, no hay scheduler/job periódico en el proyecto (a diferencia de lo propuesto para presupuestos en `budgets-and-savings-goals`, que tampoco se llegó a construir). `purge_expired_transactions()` se ejecuta al entrar a `GET /trash`, `DELETE /{id}` y `POST /{id}/restore` — suficiente para un uso personal de la app; si en el futuro se construye el scheduler de `budgets-and-savings-goals`, este purgado se puede mover ahí como red de seguridad adicional.
+- Frontend: pantalla `/trash` ("Papelera") con la lista de movimientos borrados, días restantes antes del borrado definitivo y botón "Restaurar".
+
 ## Risks / Trade-offs
 
 - [Migración destructiva de `expenses`] → hacer `pg_dump` previo; migración Alembic en una transacción; probar `upgrade` + `downgrade` en copia local antes de aplicar.

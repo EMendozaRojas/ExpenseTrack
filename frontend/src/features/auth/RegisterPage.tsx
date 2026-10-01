@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { API_BASE_URL, ApiError } from "../../api/client";
+import { SUPPORTED_CURRENCIES } from "../preferences/currencies";
 import { googleLoginUrl } from "./api";
 import { useAuth } from "./useAuth";
 
@@ -14,10 +15,11 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [baseCurrency, setBaseCurrency] = useState("EUR");
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const mutation = useMutation({
-    mutationFn: () => register({ email, password }),
+    mutationFn: () => register({ email, password }, baseCurrency),
     onSuccess: () => navigate("/", { replace: true }),
   });
 
@@ -80,6 +82,22 @@ export function RegisterPage() {
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
         />
+
+        <label htmlFor="base-currency">Moneda principal</label>
+        <select
+          id="base-currency"
+          value={baseCurrency}
+          onChange={(event) => setBaseCurrency(event.target.value)}
+        >
+          {SUPPORTED_CURRENCIES.map((currency) => (
+            <option key={currency} value={currency}>
+              {currency}
+            </option>
+          ))}
+        </select>
+        <p className="form-hint">
+          Podrás cambiarla más adelante desde Configuración.
+        </p>
 
         {errorMessage && (
           <p role="alert" className="form-error">

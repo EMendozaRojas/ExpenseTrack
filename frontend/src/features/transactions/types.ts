@@ -67,6 +67,11 @@ export interface TransactionPage {
   next_cursor: string | null;
 }
 
+export interface TrashedTransaction extends Transaction {
+  deleted_at: string;
+  purge_at: string;
+}
+
 export interface CategorySummary {
   category_id: number;
   category_name: string;

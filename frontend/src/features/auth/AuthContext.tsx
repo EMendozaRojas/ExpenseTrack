@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { updatePreferences } from "../preferences/api";
 import { fetchCurrentUser, login as apiLogin, logoutRequest, register as apiRegister } from "./api";
 import { AuthContext, type AuthContextValue } from "./context";
 import type { Credentials, User } from "./types";
@@ -58,11 +59,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const handleRegister = useCallback(
-    async (credentials: Credentials) => {
+    async (credentials: Credentials, baseCurrency?: string) => {
       await apiRegister(credentials);
-      await handleLogin(credentials);
+      const tokens = await apiLogin(credentials);
+      storeTokens(tokens.access_token, tokens.refresh_token);
+      if (baseCurrency) {
+        try {
+          await updatePreferences(tokens.access_token, { base_currency: baseCurrency });
+        } catch {
+          // no bloquear el registro si falla guardar la moneda elegida
+        }
+      }
     },
-    [handleLogin],
+    [storeTokens],
   );
 
   const loginWithTokens = useCallback(

@@ -59,6 +59,12 @@ Ver `proposal.md` — Why. Depende de `accounts-and-transactions`. Agrupa tres c
 - `Intl.NumberFormat(locale, {style:'currency', currency})` con los valores de `user-preferences`. El backend sigue enviando importes como string decimal + código de moneda; el formateo es del frontend.
 - **PENDIENTE DE CONFIRMAR.**
 
+### D9 — Cambio de `base_currency` con datos existentes — CONFIRMADO
+- Se elige la moneda principal al crear la cuenta.
+- Si el usuario la cambia más adelante, **no se convierten los movimientos pasados**: solo cambia la etiqueta de moneda para los registros nuevos. Los datos anteriores conservan el valor numérico con el que fueron guardados (no se recalcula ni se muestra "convertido").
+- Al cambiar `base_currency`, el frontend debe mostrar un aviso explícito: *"Este cambio afectará a tus nuevos registros. Tus datos pasados mantendrán el valor numérico con el que fueron guardados."*
+- Implicación: no hace falta lógica de conversión retroactiva ni recalcular históricos; es un cambio simple de preferencia + aviso en el frontend.
+
 ## Risks / Trade-offs
 
 - [Cambiar `hashed_password` a nullable + refresh tokens toca el núcleo de auth] → cubrir con tests de regresión del login por contraseña antes de tocar nada; hacerlo detrás de los tests existentes verdes.
@@ -74,8 +80,10 @@ Ver `proposal.md` — Why. Depende de `accounts-and-transactions`. Agrupa tres c
 3. Infra: volumen `attachments_data` en `docker-compose.yml`; variables OAuth y de FX en `.env.example`.
 4. Rollback: `downgrade` elimina tablas/columnas nuevas; `hashed_password` vuelve a `NOT NULL` solo si no hay filas nulas (si las hay, el downgrade falla a propósito).
 
+### D10 — Retención de adjuntos al borrar un movimiento — CONFIRMADO
+- Ver `D — Papelera con caducidad` en `openspec/changes/accounts-and-transactions/design.md`. Los adjuntos se conservan mientras el movimiento esté en la papelera (30 días) y se borran en firme junto con él en el purgado, nunca antes.
+
 ## Open Questions
 
-- ¿Se permite al usuario cambiar `base_currency` una vez tiene datos? Implica re-mostrar todo convertido; no cambia el almacenamiento.
-- ¿Retención/borrado de adjuntos al borrar (soft) un movimiento? Propuesto: se conservan hasta el borrado definitivo del movimiento.
+(ninguna abierta por ahora)
 - ¿Se soporta más de una identidad social por usuario? El modelo `auth_identities` ya lo permite; la UI puede limitarlo.

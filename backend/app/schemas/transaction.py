@@ -75,6 +75,11 @@ class TransactionPage(BaseModel):
     next_cursor: str | None
 
 
+class TransactionTrashRead(TransactionRead):
+    deleted_at: datetime
+    purge_at: datetime
+
+
 class TransferCreate(BaseModel):
     from_account_id: int
     to_account_id: int

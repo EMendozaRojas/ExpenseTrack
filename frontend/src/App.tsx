@@ -11,7 +11,9 @@ import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { GoalsPage } from "./features/goals/GoalsPage";
 import { ImportsPage } from "./features/imports/ImportsPage";
 import { InsightsPage } from "./features/insights/InsightsPage";
+import { PreferencesPage } from "./features/preferences/PreferencesPage";
 import { TransactionsPage } from "./features/transactions/TransactionsPage";
+import { TrashPage } from "./features/transactions/TrashPage";
 
 function App() {
   return (
@@ -24,10 +26,12 @@ function App() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/transactions" element={<TransactionsPage />} />
+            <Route path="/trash" element={<TrashPage />} />
             <Route path="/imports" element={<ImportsPage />} />
             <Route path="/budgets" element={<BudgetsPage />} />
             <Route path="/insights" element={<InsightsPage />} />
             <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/settings" element={<PreferencesPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
