@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { useAuth } from "../auth/useAuth";
 import { getDashboardSummary } from "../transactions/api";
@@ -56,30 +56,78 @@ export function DashboardPage() {
           )}
 
           <section className="dashboard-stats">
-            <StatTile label="Entradas" value={formatCurrency(Number(summary.income_total))} />
-            <StatTile label="Salidas" value={formatCurrency(Number(summary.expense_total))} />
+            <StatTile
+              label="Entradas"
+              value={formatCurrency(Number(summary.income_total))}
+              icon="⬆️"
+              accent="income"
+            />
+            <StatTile
+              label="Salidas"
+              value={formatCurrency(Number(summary.expense_total))}
+              icon="⬇️"
+              accent="expense"
+            />
             <div
-              className={`stat-tile dashboard-net dashboard-net-${summary.net_status}`}
+              className={`stat-card dashboard-net dashboard-net-${summary.net_status}`}
             >
-              <span className="stat-tile-label">
-                Saldo neto · {summary.net_status === "a_favor" ? "A favor" : "En contra"}
+              <span
+                className="stat-card-icon"
+                aria-hidden="true"
+                style={{
+                  background:
+                    summary.net_status === "a_favor"
+                      ? "var(--accent-income-track)"
+                      : "var(--accent-expense-track)",
+                  color:
+                    summary.net_status === "a_favor"
+                      ? "var(--accent-income)"
+                      : "var(--accent-expense)",
+                }}
+              >
+                ⚖️
               </span>
-              <span className="stat-tile-value">{formatCurrency(Number(summary.net_total))}</span>
+              <div className="stat-card-body">
+                <span className="stat-tile-label">
+                  Saldo neto · {summary.net_status === "a_favor" ? "A favor" : "En contra"}
+                </span>
+                <span className="stat-tile-value">{formatCurrency(Number(summary.net_total))}</span>
+              </div>
             </div>
           </section>
 
           <section className="dashboard-stats">
-            <StatTile label="Gasto fijo" value={formatCurrency(Number(summary.fixed_total))} />
+            <StatTile
+              label="Gasto fijo"
+              value={formatCurrency(Number(summary.fixed_total))}
+              icon="📌"
+              accent="neutral"
+            />
             <StatTile
               label="Gasto variable"
               value={formatCurrency(Number(summary.variable_total))}
+              icon="🔄"
+              accent="info"
             />
           </section>
 
           <section>
             <h2>Gasto por categoría</h2>
             {summary.by_category.length === 0 ? (
-              <p className="page-status">Sin gastos clasificados este mes.</p>
+              <div className="dashboard-empty-state">
+                <span className="dashboard-empty-state-icon" aria-hidden="true">
+                  🧾
+                </span>
+                <span className="dashboard-empty-state-title">
+                  Todavía no hay gastos clasificados este mes
+                </span>
+                <span className="dashboard-empty-state-hint">
+                  Registra tu primer movimiento para empezar a ver el desglose por categoría.
+                </span>
+                <Link to="/transactions" className="button-secondary">
+                  Agregar movimiento
+                </Link>
+              </div>
             ) : (
               <div className="category-tree">
                 {summary.by_category.map((node) => (

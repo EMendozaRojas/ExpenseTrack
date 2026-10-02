@@ -2,6 +2,21 @@ import { NavLink, Outlet, useNavigate } from "react-router";
 
 import { useAuth } from "../features/auth/useAuth";
 
+const NAV_ITEMS = [
+  { to: "/", end: true, icon: "📊", label: "Dashboard" },
+  { to: "/transactions", icon: "💸", label: "Movimientos" },
+  { to: "/imports", icon: "📥", label: "Importar" },
+  { to: "/budgets", icon: "🎯", label: "Presupuestos" },
+  { to: "/goals", icon: "🏁", label: "Metas" },
+  { to: "/insights", icon: "💡", label: "Insights" },
+  { to: "/trash", icon: "🗑️", label: "Papelera" },
+  { to: "/settings", icon: "⚙️", label: "Configuración" },
+];
+
+function navLinkClassName({ isActive }: { isActive: boolean }): string {
+  return isActive ? "app-nav-active" : "";
+}
+
 export function AppLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -11,48 +26,45 @@ export function AppLayout() {
     navigate("/login", { replace: true });
   }
 
+  const initial = user?.email ? user.email[0].toUpperCase() : "?";
+
   return (
     <div className="app-shell">
-      <header className="app-header">
-        <span className="app-title">ExpenseTrack</span>
-        <nav className="app-nav">
-          <NavLink to="/" end className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
-            Dashboard
-          </NavLink>
-          <NavLink
-            to="/transactions"
-            className={({ isActive }) => (isActive ? "app-nav-active" : "")}
-          >
-            Movimientos
-          </NavLink>
-          <NavLink to="/imports" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
-            Importar
-          </NavLink>
-          <NavLink to="/budgets" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
-            Presupuestos
-          </NavLink>
-          <NavLink to="/insights" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
-            Insights
-          </NavLink>
-          <NavLink to="/goals" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
-            Metas
-          </NavLink>
-          <NavLink to="/settings" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
-            Configuración
-          </NavLink>
-          <NavLink to="/trash" className={({ isActive }) => (isActive ? "app-nav-active" : "")}>
-            Papelera
-          </NavLink>
-        </nav>
+      <aside className="app-sidebar">
         {user && (
-          <div className="app-header-user">
-            <span className="app-header-email">{user.email}</span>
-            <button type="button" className="button-secondary" onClick={handleLogout}>
-              Cerrar sesión
-            </button>
+          <div className="app-sidebar-profile">
+            <div className="app-sidebar-avatar" aria-hidden="true">
+              {initial}
+            </div>
+            <span className="app-sidebar-name">{user.email}</span>
           </div>
         )}
-      </header>
+
+        <nav className="app-nav">
+          {NAV_ITEMS.map((item) => (
+            <NavLink key={item.to} to={item.to} end={item.end} className={navLinkClassName}>
+              <span className="app-nav-icon" aria-hidden="true">
+                {item.icon}
+              </span>
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        {user && (
+          <button
+            type="button"
+            className="button-secondary app-sidebar-logout"
+            onClick={handleLogout}
+          >
+            Cerrar sesión
+          </button>
+        )}
+
+        <div className="app-sidebar-footer">
+          <img className="app-sidebar-logo" src="/logo.png" alt="ExpenseTrack — Tus gastos, siempre contigo" />
+        </div>
+      </aside>
       <main className="app-main">
         <Outlet />
       </main>
