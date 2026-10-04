@@ -74,6 +74,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [storeTokens],
   );
 
+  const refreshUser = useCallback(async () => {
+    if (!token) return;
+    const fetchedUser = await fetchCurrentUser(token);
+    setUser(fetchedUser);
+  }, [token]);
+
   const loginWithTokens = useCallback(
     (accessToken: string, refreshToken: string | null) => {
       storeTokens(accessToken, refreshToken);
@@ -103,8 +109,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register: handleRegister,
       loginWithTokens,
       logout,
+      refreshUser,
     }),
-    [user, token, isLoading, handleLogin, handleRegister, loginWithTokens, logout],
+    [user, token, isLoading, handleLogin, handleRegister, loginWithTokens, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

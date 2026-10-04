@@ -38,6 +38,8 @@ describe("LoginPage", () => {
     vi.mocked(api.fetchCurrentUser).mockResolvedValue({
       id: 1,
       email: "demo@example.com",
+      full_name: "Demo User",
+      has_avatar: false,
       created_at: "2026-01-01T00:00:00Z",
     });
 

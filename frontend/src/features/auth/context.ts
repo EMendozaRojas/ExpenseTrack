@@ -10,6 +10,7 @@ export interface AuthContextValue {
   register: (credentials: Credentials, baseCurrency?: string) => Promise<void>;
   loginWithTokens: (accessToken: string, refreshToken: string | null) => void;
   logout: () => void;
+  refreshUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextValue | undefined>(undefined);

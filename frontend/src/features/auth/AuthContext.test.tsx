@@ -7,7 +7,13 @@ import { useAuth } from "./useAuth";
 
 vi.mock("./api");
 
-const demoUser = { id: 1, email: "demo@example.com", created_at: "2026-01-01T00:00:00Z" };
+const demoUser = {
+  id: 1,
+  email: "demo@example.com",
+  full_name: "Demo User",
+  has_avatar: false,
+  created_at: "2026-01-01T00:00:00Z",
+};
 
 describe("AuthContext", () => {
   beforeEach(() => {
@@ -53,6 +59,8 @@ describe("AuthContext", () => {
     vi.mocked(api.fetchCurrentUser).mockResolvedValue({
       id: 2,
       email: "restored@example.com",
+      full_name: "Restored User",
+      has_avatar: false,
       created_at: "2026-01-01T00:00:00Z",
     });
 

@@ -52,17 +52,22 @@ describe("RegisterPage", () => {
     vi.mocked(api.register).mockResolvedValue({
       id: 1,
       email: "demo@example.com",
+      full_name: null,
+      has_avatar: false,
       created_at: "2026-01-01T00:00:00Z",
     });
     vi.mocked(api.login).mockResolvedValue({ access_token: "abc123", token_type: "bearer" });
     vi.mocked(api.fetchCurrentUser).mockResolvedValue({
       id: 1,
       email: "demo@example.com",
+      full_name: null,
+      has_avatar: false,
       created_at: "2026-01-01T00:00:00Z",
     });
     vi.mocked(preferencesApi.updatePreferences).mockResolvedValue({
       base_currency: "USD",
       locale: "es-ES",
+      has_transactions: false,
     });
 
     renderRegisterPage();

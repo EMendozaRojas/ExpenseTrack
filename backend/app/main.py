@@ -17,6 +17,7 @@ from app.routers import (
     insights,
     preferences,
     transactions,
+    users,
 )
 
 settings = get_settings()
@@ -45,6 +46,7 @@ app.include_router(goals.router, prefix="/api/v1")
 app.include_router(preferences.router, prefix="/api/v1")
 app.include_router(fx_rates.router, prefix="/api/v1")
 app.include_router(attachments.router, prefix="/api/v1")
+app.include_router(users.router, prefix="/api/v1")
 
 
 @app.get("/health")
