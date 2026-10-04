@@ -6,6 +6,7 @@ class UserPreferencesRead(BaseModel):
 
     base_currency: str
     locale: str
+    has_transactions: bool
 
 
 class UserPreferencesUpdate(BaseModel):

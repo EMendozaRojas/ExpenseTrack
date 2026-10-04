@@ -20,6 +20,12 @@ class Settings(BaseSettings):
     frontend_base_url: str = "http://localhost:5173"
     refresh_token_expire_days: int = 30
 
+    # SMTP vacío (default) = envío de email deshabilitado (p. ej. en tests).
+    # En local apunta a Mailhog (docker-compose), que nunca entrega a internet.
+    smtp_host: str = ""
+    smtp_port: int = 1025
+    smtp_from: str = "notificaciones@expensetrack.local"
+
     @property
     def cors_origins(self) -> list[str]:
         return [origin.strip() for origin in self.backend_cors_origins.split(",")]

@@ -11,9 +11,10 @@ import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { GoalsPage } from "./features/goals/GoalsPage";
 import { ImportsPage } from "./features/imports/ImportsPage";
 import { InsightsPage } from "./features/insights/InsightsPage";
+import { NotificationsPage } from "./features/notifications/NotificationsPage";
 import { PreferencesPage } from "./features/preferences/PreferencesPage";
+import { OnboardingPage } from "./features/profile/OnboardingPage";
 import { TransactionsPage } from "./features/transactions/TransactionsPage";
-import { TrashPage } from "./features/transactions/TrashPage";
 
 function App() {
   return (
@@ -23,14 +24,15 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/auth/social-callback" element={<SocialCallbackPage />} />
         <Route element={<ProtectedRoute />}>
+          <Route path="/onboarding" element={<OnboardingPage />} />
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/transactions" element={<TransactionsPage />} />
-            <Route path="/trash" element={<TrashPage />} />
             <Route path="/imports" element={<ImportsPage />} />
             <Route path="/budgets" element={<BudgetsPage />} />
             <Route path="/insights" element={<InsightsPage />} />
             <Route path="/goals" element={<GoalsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/settings" element={<PreferencesPage />} />
           </Route>
         </Route>

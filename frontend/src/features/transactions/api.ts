@@ -8,7 +8,6 @@ import type {
   Transaction,
   TransactionInput,
   TransactionPage,
-  TrashedTransaction,
 } from "./types";
 
 export function listCategories(token: string): Promise<Category[]> {
@@ -58,16 +57,6 @@ export function deleteTransaction(token: string, transactionId: number): Promise
   return apiFetch<void>(`/transactions/${transactionId}`, token, { method: "DELETE" });
 }
 
-export function listTrash(token: string): Promise<TrashedTransaction[]> {
-  return apiFetch<TrashedTransaction[]>("/transactions/trash", token);
-}
-
-export function restoreTransaction(token: string, transactionId: number): Promise<Transaction> {
-  return apiFetch<Transaction>(`/transactions/${transactionId}/restore`, token, {
-    method: "POST",
-  });
-}
-
 export function getMonthlySummary(
   token: string,
   year: number,
@@ -80,6 +69,11 @@ export function getDashboardSummary(
   token: string,
   year: number,
   month: number,
+  accountId?: number | null,
 ): Promise<DashboardSummary> {
-  return apiFetch<DashboardSummary>(`/dashboard/summary?year=${year}&month=${month}`, token);
+  const accountParam = accountId ? `&account_id=${accountId}` : "";
+  return apiFetch<DashboardSummary>(
+    `/dashboard/summary?year=${year}&month=${month}${accountParam}`,
+    token,
+  );
 }

@@ -60,7 +60,7 @@ Ver `proposal.md` — Why. Depende de `accounts-and-transactions`. Agrupa tres c
 - **PENDIENTE DE CONFIRMAR.**
 
 ### D9 — Cambio de `base_currency` con datos existentes — CONFIRMADO
-- Se elige la moneda principal al crear la cuenta.
+- Se elige la moneda principal al crear la cuenta (selector manual en `RegisterPage`; se descartó inferirla por idioma del navegador — un usuario con VPN o idioma del sistema en otro país terminaría con la moneda equivocada).
 - Si el usuario la cambia más adelante, **no se convierten los movimientos pasados**: solo cambia la etiqueta de moneda para los registros nuevos. Los datos anteriores conservan el valor numérico con el que fueron guardados (no se recalcula ni se muestra "convertido").
 - Al cambiar `base_currency`, el frontend debe mostrar un aviso explícito: *"Este cambio afectará a tus nuevos registros. Tus datos pasados mantendrán el valor numérico con el que fueron guardados."*
 - Implicación: no hace falta lógica de conversión retroactiva ni recalcular históricos; es un cambio simple de preferencia + aviso en el frontend.

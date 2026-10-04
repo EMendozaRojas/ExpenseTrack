@@ -30,6 +30,15 @@ def _to_read(db: Session, account: Account) -> AccountRead:
     )
 
 
+def _clear_other_primary_accounts(db: Session, current_user: User, except_account_id: int | None) -> None:
+    query = db.query(Account).filter(
+        Account.owner_id == current_user.id, Account.is_primary.is_(True)
+    )
+    if except_account_id is not None:
+        query = query.filter(Account.id != except_account_id)
+    query.update({"is_primary": False})
+
+
 def _get_owned_account(db: Session, account_id: int, current_user: User) -> Account:
     account = (
         db.query(Account)
@@ -67,8 +76,12 @@ def create_account(
         type=payload.type,
         currency=payload.currency.upper(),
         initial_balance=payload.initial_balance,
+        is_primary=payload.is_primary,
     )
     db.add(account)
+    db.flush()
+    if payload.is_primary:
+        _clear_other_primary_accounts(db, current_user, account.id)
     db.commit()
     db.refresh(account)
     return _to_read(db, account)
@@ -88,6 +101,10 @@ def update_account(
         account.type = payload.type
     if payload.currency is not None:
         account.currency = payload.currency.upper()
+    if payload.is_primary is not None:
+        account.is_primary = payload.is_primary
+        if payload.is_primary:
+            _clear_other_primary_accounts(db, current_user, account.id)
     db.commit()
     db.refresh(account)
     return _to_read(db, account)

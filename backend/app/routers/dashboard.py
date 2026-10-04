@@ -2,12 +2,13 @@ from datetime import date
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session, aliased
 
 from app.auth.dependencies import get_current_user
 from app.core.database import get_db
+from app.models.account import Account
 from app.models.category import Category
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -36,8 +37,18 @@ def monthly_dashboard(
     current_user: Annotated[User, Depends(get_current_user)],
     year: Annotated[int, Query(ge=2000, le=2100)],
     month: Annotated[int, Query(ge=1, le=12)],
+    account_id: int | None = None,
 ) -> DashboardSummary:
     range_start, range_end = _month_range(year, month)
+
+    if account_id is not None:
+        owned = (
+            db.query(Account.id)
+            .filter(Account.id == account_id, Account.owner_id == current_user.id)
+            .first()
+        )
+        if owned is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cuenta no encontrada")
 
     base_filter = (
         Transaction.owner_id == current_user.id,
@@ -45,6 +56,8 @@ def monthly_dashboard(
         Transaction.posted_at >= range_start,
         Transaction.posted_at < range_end,
     )
+    if account_id is not None:
+        base_filter = (*base_filter, Transaction.account_id == account_id)
 
     income_total = (
         db.query(func.coalesce(func.sum(Transaction.amount), 0))

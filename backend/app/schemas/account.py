@@ -12,12 +12,14 @@ class AccountCreate(BaseModel):
     type: AccountType
     currency: str = Field(default="EUR", min_length=3, max_length=3)
     initial_balance: Decimal = Decimal("0")
+    is_primary: bool = False
 
 
 class AccountUpdate(BaseModel):
     name: str | None = None
     type: AccountType | None = None
     currency: str | None = Field(default=None, min_length=3, max_length=3)
+    is_primary: bool | None = None
 
 
 class AccountRead(BaseModel):
@@ -31,5 +33,6 @@ class AccountRead(BaseModel):
     initial_balance: Decimal
     balance: Decimal
     is_archived: bool
+    is_primary: bool
     created_at: datetime
     updated_at: datetime

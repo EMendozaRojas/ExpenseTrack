@@ -9,6 +9,7 @@ from app.models.fx_rate import FxRate
 from app.models.goal_contribution import GoalContribution
 from app.models.import_batch import ImportBatch
 from app.models.import_row import ImportRow
+from app.models.notification import Notification
 from app.models.refresh_token import RefreshToken
 from app.models.savings_goal import SavingsGoal
 from app.models.transaction import Transaction
@@ -32,4 +33,5 @@ __all__ = [
     "UserPreferences",
     "AuthIdentity",
     "RefreshToken",
+    "Notification",
 ]

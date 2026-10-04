@@ -6,7 +6,7 @@ def test_get_preferences_defaults(client: TestClient, auth_headers) -> None:
 
     response = client.get("/api/v1/users/me/preferences/", headers=headers)
     assert response.status_code == 200
-    assert response.json() == {"base_currency": "EUR", "locale": "es-ES"}
+    assert response.json() == {"base_currency": "EUR", "locale": "es-ES", "has_transactions": False}
 
 
 def test_update_preferences(client: TestClient, auth_headers) -> None:
@@ -27,6 +27,38 @@ def test_invalid_currency_code_rejected(client: TestClient, auth_headers) -> Non
         "/api/v1/users/me/preferences/", json={"base_currency": "EURO"}, headers=headers
     )
     assert response.status_code == 422
+
+
+def test_currency_locked_once_user_has_transactions(
+    client: TestClient, auth_headers, make_account
+) -> None:
+    headers, user = auth_headers()
+    account = make_account(user)
+    client.post(
+        "/api/v1/transactions/",
+        json={
+            "account_id": account.id,
+            "amount": "-10.00",
+            "direction": "expense",
+            "posted_at": "2026-03-01",
+        },
+        headers=headers,
+    )
+
+    preferences = client.get("/api/v1/users/me/preferences/", headers=headers)
+    assert preferences.json()["has_transactions"] is True
+
+    response = client.patch(
+        "/api/v1/users/me/preferences/", json={"base_currency": "USD"}, headers=headers
+    )
+    assert response.status_code == 409
+
+    # el locale sigue siendo editable aunque la moneda esté bloqueada
+    locale_response = client.patch(
+        "/api/v1/users/me/preferences/", json={"locale": "en-US"}, headers=headers
+    )
+    assert locale_response.status_code == 200
+    assert locale_response.json()["locale"] == "en-US"
 
 
 def test_create_and_list_fx_rate(client: TestClient, auth_headers) -> None:

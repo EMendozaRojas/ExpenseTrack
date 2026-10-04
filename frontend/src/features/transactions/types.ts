@@ -23,6 +23,7 @@ export interface Account {
   initial_balance: string;
   balance: string;
   is_archived: boolean;
+  is_primary: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -32,6 +33,7 @@ export interface AccountInput {
   type: AccountType;
   currency?: string;
   initial_balance?: string;
+  is_primary?: boolean;
 }
 
 export type Direction = "income" | "expense" | "transfer";
@@ -67,10 +69,6 @@ export interface TransactionPage {
   next_cursor: string | null;
 }
 
-export interface TrashedTransaction extends Transaction {
-  deleted_at: string;
-  purge_at: string;
-}
 
 export interface CategorySummary {
   category_id: number;

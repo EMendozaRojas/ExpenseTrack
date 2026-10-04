@@ -21,6 +21,7 @@ from app.schemas.goal import (
     GoalRead,
     GoalUpdate,
 )
+from app.services.notifications import check_goal_notifications
 
 router = APIRouter(prefix="/goals", tags=["goals"])
 
@@ -204,6 +205,8 @@ def add_contribution(
     )
     db.add(contribution)
     db.flush()
+
+    check_goal_notifications(db, current_user, goal)
 
     if goal.status == "active" and _current_amount(db, goal.id) >= goal.target_amount:
         goal.status = "completed"

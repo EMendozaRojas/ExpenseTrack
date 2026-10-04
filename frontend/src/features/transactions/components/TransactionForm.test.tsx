@@ -15,6 +15,7 @@ const accounts: Account[] = [
     initial_balance: "0.00",
     balance: "0.00",
     is_archived: false,
+    is_primary: true,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
   },

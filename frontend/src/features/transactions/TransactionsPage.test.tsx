@@ -22,6 +22,7 @@ const accounts: Account[] = [
     initial_balance: "0.00",
     balance: "45.50",
     is_archived: false,
+    is_primary: true,
     created_at: "2026-01-01T00:00:00Z",
     updated_at: "2026-01-01T00:00:00Z",
   },
@@ -106,6 +107,7 @@ describe("TransactionsPage", () => {
 
     await screen.findByText("Supermercado");
     await user.click(screen.getByRole("button", { name: "Eliminar" }));
+    await user.click(screen.getByRole("button", { name: "Sí" }));
 
     await waitFor(() => expect(api.deleteTransaction).toHaveBeenCalledWith("test-token", 1));
   });

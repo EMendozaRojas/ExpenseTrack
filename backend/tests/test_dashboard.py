@@ -172,3 +172,39 @@ def test_no_transactions_this_month_is_incomplete(
     body = response.json()
     assert body["incomplete_data"] is True
     assert body["last_transaction_date"] is None
+
+
+def test_dashboard_filters_by_account(client: TestClient, auth_headers, make_account) -> None:
+    headers, user = auth_headers()
+    account_a = make_account(user, name="Efectivo", type="cash")
+    account_b = make_account(user, name="Banco", type="checking")
+
+    _create_expense(client, headers, account_a.id, "-10.00", "2026-09-05")
+    _create_expense(client, headers, account_b.id, "-25.00", "2026-09-05")
+
+    combined = client.get(
+        "/api/v1/dashboard/summary", params={"year": 2026, "month": 9}, headers=headers
+    ).json()
+    assert combined["expense_total"] == "35.00"
+
+    only_a = client.get(
+        "/api/v1/dashboard/summary",
+        params={"year": 2026, "month": 9, "account_id": account_a.id},
+        headers=headers,
+    ).json()
+    assert only_a["expense_total"] == "10.00"
+
+
+def test_dashboard_rejects_account_from_another_user(
+    client: TestClient, auth_headers, make_account
+) -> None:
+    headers_a, user_a = auth_headers()
+    headers_b, _ = auth_headers()
+    account_a = make_account(user_a)
+
+    response = client.get(
+        "/api/v1/dashboard/summary",
+        params={"year": 2026, "month": 9, "account_id": account_a.id},
+        headers=headers_b,
+    )
+    assert response.status_code == 404

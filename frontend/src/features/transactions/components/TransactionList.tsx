@@ -18,6 +18,7 @@ export function TransactionList({
   isDeleting,
 }: TransactionListProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<number | null>(null);
 
   if (transactions.length === 0) {
     return <p className="page-status">No hay movimientos registrados este mes.</p>;
@@ -61,16 +62,38 @@ export function TransactionList({
                   >
                     {isExpanded ? "Ocultar adjuntos" : "Adjuntos"}
                   </button>
-                  {transaction.direction !== "transfer" && (
-                    <button
-                      type="button"
-                      className="button-secondary"
-                      disabled={isDeleting}
-                      onClick={() => onDelete(transaction.id)}
-                    >
-                      Eliminar
-                    </button>
-                  )}
+                  {transaction.direction !== "transfer" &&
+                    (confirmDeleteId === transaction.id ? (
+                      <span className="confirm-delete">
+                        <span className="confirm-delete-text">¿Eliminar?</span>
+                        <button
+                          type="button"
+                          disabled={isDeleting}
+                          onClick={() => {
+                            onDelete(transaction.id);
+                            setConfirmDeleteId(null);
+                          }}
+                        >
+                          Sí
+                        </button>
+                        <button
+                          type="button"
+                          className="button-secondary"
+                          onClick={() => setConfirmDeleteId(null)}
+                        >
+                          No
+                        </button>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="button-secondary"
+                        disabled={isDeleting}
+                        onClick={() => setConfirmDeleteId(transaction.id)}
+                      >
+                        Eliminar
+                      </button>
+                    ))}
                 </td>
               </tr>
               {isExpanded && (

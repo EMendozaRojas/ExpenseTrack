@@ -37,6 +37,7 @@ export function TransactionsPage() {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [newAccountName, setNewAccountName] = useState("");
+  const [newAccountIsPrimary, setNewAccountIsPrimary] = useState(true);
 
   const { from: dateFrom, to: dateTo } = monthRange(year, month);
 
@@ -65,8 +66,13 @@ export function TransactionsPage() {
   });
 
   const createAccountMutation = useMutation({
-    mutationFn: (name: string) =>
-      createAccount(token as string, { name, type: "cash", currency: "EUR" }),
+    mutationFn: (input: { name: string; isPrimary: boolean }) =>
+      createAccount(token as string, {
+        name: input.name,
+        type: "cash",
+        currency: "EUR",
+        is_primary: input.isPrimary,
+      }),
     onSuccess: (created: Account) => {
       queryClient.setQueryData<Account[]>(["accounts"], (previous) =>
         previous ? [...previous, created] : [created],
@@ -174,11 +180,22 @@ export function TransactionsPage() {
                 onChange={(event) => setNewAccountName(event.target.value)}
               />
             </div>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={newAccountIsPrimary}
+                onChange={(event) => setNewAccountIsPrimary(event.target.checked)}
+              />
+              Cuenta principal
+            </label>
             <button
               type="button"
               disabled={!newAccountName.trim() || createAccountMutation.isPending}
               onClick={() => {
-                createAccountMutation.mutate(newAccountName.trim());
+                createAccountMutation.mutate({
+                  name: newAccountName.trim(),
+                  isPrimary: newAccountIsPrimary,
+                });
                 setNewAccountName("");
               }}
             >

@@ -15,6 +15,7 @@ from app.routers import (
     goals,
     imports,
     insights,
+    notifications,
     preferences,
     transactions,
     users,
@@ -47,6 +48,7 @@ app.include_router(preferences.router, prefix="/api/v1")
 app.include_router(fx_rates.router, prefix="/api/v1")
 app.include_router(attachments.router, prefix="/api/v1")
 app.include_router(users.router, prefix="/api/v1")
+app.include_router(notifications.router, prefix="/api/v1")
 
 
 @app.get("/health")

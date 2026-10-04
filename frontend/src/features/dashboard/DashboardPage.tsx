@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router";
 
 import { useAuth } from "../auth/useAuth";
-import { getDashboardSummary } from "../transactions/api";
+import { getDashboardSummary, listAccounts } from "../transactions/api";
 import { MonthNavigator } from "../transactions/components/MonthNavigator";
 import { StatTile } from "../transactions/components/StatTile";
 import { formatCurrency } from "../transactions/format";
+import { CategoryDonutChart } from "./components/CategoryDonutChart";
+import { IncomeExpenseBarChart } from "./components/IncomeExpenseBarChart";
 
 const today = new Date();
 
@@ -20,27 +22,68 @@ export function DashboardPage() {
 
   const year = parseParam(searchParams.get("year"), 1, 9999, today.getFullYear());
   const month = parseParam(searchParams.get("month"), 1, 12, today.getMonth() + 1);
+  const accountParam = searchParams.get("account");
+  const accountId = accountParam ? Number(accountParam) : null;
 
   function handleMonthChange(newYear: number, newMonth: number) {
-    setSearchParams({ year: String(newYear), month: String(newMonth) });
+    const next = new URLSearchParams(searchParams);
+    next.set("year", String(newYear));
+    next.set("month", String(newMonth));
+    setSearchParams(next);
   }
 
+  function handleAccountChange(newAccountId: string) {
+    const next = new URLSearchParams(searchParams);
+    if (newAccountId) {
+      next.set("account", newAccountId);
+    } else {
+      next.delete("account");
+    }
+    setSearchParams(next);
+  }
+
+  const accountsQuery = useQuery({
+    queryKey: ["accounts"],
+    queryFn: () => listAccounts(token as string),
+    enabled: token !== null,
+  });
+
   const summaryQuery = useQuery({
-    queryKey: ["dashboard-summary", year, month],
-    queryFn: () => getDashboardSummary(token as string, year, month),
+    queryKey: ["dashboard-summary", year, month, accountId],
+    queryFn: () => getDashboardSummary(token as string, year, month, accountId),
     enabled: token !== null,
     staleTime: 5 * 60 * 1000,
   });
 
   const summary = summaryQuery.data;
+  const accounts = accountsQuery.data ?? [];
 
   return (
     <div className="dashboard-page">
-      <MonthNavigator
-        year={year}
-        month={month}
-        onChange={handleMonthChange}
-      />
+      <div className="dashboard-toolbar">
+        <MonthNavigator
+          year={year}
+          month={month}
+          onChange={handleMonthChange}
+        />
+
+        {accounts.length > 1 && (
+          <select
+            aria-label="Cuenta"
+            className="dashboard-account-select"
+            value={accountParam ?? ""}
+            onChange={(event) => handleAccountChange(event.target.value)}
+          >
+            <option value="">Todas las cuentas</option>
+            {accounts.map((account) => (
+              <option key={account.id} value={account.id}>
+                {account.is_primary ? "★ " : ""}
+                {account.name}
+              </option>
+            ))}
+          </select>
+        )}
+      </div>
 
       {summaryQuery.isLoading && <p className="page-status">Cargando dashboard...</p>}
 
@@ -112,6 +155,14 @@ export function DashboardPage() {
           </section>
 
           <section>
+            <h2>Entradas vs. salidas</h2>
+            <IncomeExpenseBarChart
+              income={Number(summary.income_total)}
+              expense={Number(summary.expense_total)}
+            />
+          </section>
+
+          <section>
             <h2>Gasto por categoría</h2>
             {summary.by_category.length === 0 ? (
               <div className="dashboard-empty-state">
@@ -129,7 +180,9 @@ export function DashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="category-tree">
+              <div className="category-breakdown">
+                <CategoryDonutChart data={summary.by_category} />
+                <div className="category-tree">
                 {summary.by_category.map((node) => (
                   <details key={node.category_id} className="category-tree-root">
                     <summary>
@@ -151,6 +204,7 @@ export function DashboardPage() {
                     </ul>
                   </details>
                 ))}
+                </div>
               </div>
             )}
           </section>

@@ -25,6 +25,7 @@ from app.schemas.transaction import (
 )
 from app.services.categorizer import match_category, uncategorized_category_id
 from app.services.fx import MissingFxRateError, convert
+from app.services.notifications import check_budget_notifications
 from app.services.transaction_retention import RETENTION_DAYS, purge_expired_transactions
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
@@ -217,6 +218,7 @@ def create_transaction(
     db.add(transaction)
     db.commit()
     db.refresh(transaction)
+    check_budget_notifications(db, current_user)
     return transaction
 
 
@@ -246,6 +248,7 @@ def update_transaction(
     transaction.note = payload.note
     db.commit()
     db.refresh(transaction)
+    check_budget_notifications(db, current_user)
     return transaction
 
 

@@ -74,3 +74,40 @@ def test_archive_account_with_movements(client: TestClient, auth_headers, make_a
 
     listed = client.get("/api/v1/accounts/", headers=headers)
     assert listed.json() == []
+
+
+def test_create_account_as_primary(client: TestClient, auth_headers) -> None:
+    headers, _ = auth_headers()
+
+    created = client.post(
+        "/api/v1/accounts/",
+        json={"name": "Efectivo", "type": "cash", "is_primary": True},
+        headers=headers,
+    )
+    assert created.status_code == 201
+    assert created.json()["is_primary"] is True
+
+
+def test_only_one_primary_account_at_a_time(client: TestClient, auth_headers) -> None:
+    headers, _ = auth_headers()
+
+    first = client.post(
+        "/api/v1/accounts/",
+        json={"name": "Efectivo", "type": "cash", "is_primary": True},
+        headers=headers,
+    ).json()
+    second = client.post(
+        "/api/v1/accounts/",
+        json={"name": "Banco", "type": "checking", "is_primary": True},
+        headers=headers,
+    ).json()
+
+    accounts = client.get("/api/v1/accounts/", headers=headers).json()
+    primary_ids = [a["id"] for a in accounts if a["is_primary"]]
+    assert primary_ids == [second["id"]]
+
+    # marcar la primera de nuevo como principal quita la marca de la segunda
+    client.patch(f"/api/v1/accounts/{first['id']}", json={"is_primary": True}, headers=headers)
+    accounts_after = client.get("/api/v1/accounts/", headers=headers).json()
+    primary_ids_after = [a["id"] for a in accounts_after if a["is_primary"]]
+    assert primary_ids_after == [first["id"]]

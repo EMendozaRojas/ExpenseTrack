@@ -1,40 +1,83 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as notificationsApi from "../features/notifications/api";
 import { AppLayout } from "./AppLayout";
 
 const logoutMock = vi.fn();
+const useAuthMock = vi.fn();
 
 vi.mock("../features/auth/useAuth", () => ({
-  useAuth: () => ({
-    user: { id: 1, email: "demo@example.com" },
-    logout: logoutMock,
-  }),
+  useAuth: () => useAuthMock(),
 }));
+vi.mock("../features/notifications/api");
 
-describe("AppLayout", () => {
-  it("muestra el email del usuario y cierra sesión al hacer clic", async () => {
-    const user = userEvent.setup();
-
-    render(
+function renderAppLayout() {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={["/"]}>
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<p>Contenido</p>} />
           </Route>
           <Route path="/login" element={<p>Login</p>} />
+          <Route path="/onboarding" element={<p>Onboarding</p>} />
         </Routes>
-      </MemoryRouter>,
-    );
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
 
-    expect(screen.getByText("demo@example.com")).toBeInTheDocument();
+describe("AppLayout", () => {
+  beforeEach(() => {
+    vi.mocked(notificationsApi.getUnreadCount).mockResolvedValue({ count: 0 });
+  });
+
+  it("muestra el nombre del usuario y cierra sesión al hacer clic", async () => {
+    const user = userEvent.setup();
+    useAuthMock.mockReturnValue({
+      user: { id: 1, email: "demo@example.com", full_name: "Demo User", has_avatar: false },
+      token: "test-token",
+      logout: logoutMock,
+    });
+
+    renderAppLayout();
+
+    expect(screen.getByText("Demo User")).toBeInTheDocument();
     expect(screen.getByText("Contenido")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     expect(logoutMock).toHaveBeenCalled();
     expect(await screen.findByText("Login")).toBeInTheDocument();
+  });
+
+  it("redirige a onboarding si el usuario no tiene nombre guardado", async () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 1, email: "demo@example.com", full_name: null, has_avatar: false },
+      token: "test-token",
+      logout: logoutMock,
+    });
+
+    renderAppLayout();
+
+    expect(await screen.findByText("Onboarding")).toBeInTheDocument();
+  });
+
+  it("muestra el contador de notificaciones no leídas en el menú", async () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 1, email: "demo@example.com", full_name: "Demo User", has_avatar: false },
+      token: "test-token",
+      logout: logoutMock,
+    });
+    vi.mocked(notificationsApi.getUnreadCount).mockResolvedValue({ count: 3 });
+
+    renderAppLayout();
+
+    expect(await screen.findByText("3")).toBeInTheDocument();
   });
 });
