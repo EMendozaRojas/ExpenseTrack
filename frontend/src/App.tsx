@@ -9,7 +9,6 @@ import { SocialCallbackPage } from "./features/auth/SocialCallbackPage";
 import { BudgetsPage } from "./features/budgets/BudgetsPage";
 import { DashboardPage } from "./features/dashboard/DashboardPage";
 import { GoalsPage } from "./features/goals/GoalsPage";
-import { ImportsPage } from "./features/imports/ImportsPage";
 import { InsightsPage } from "./features/insights/InsightsPage";
 import { NotificationsPage } from "./features/notifications/NotificationsPage";
 import { PreferencesPage } from "./features/preferences/PreferencesPage";
@@ -28,7 +27,6 @@ function App() {
           <Route element={<AppLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/transactions" element={<TransactionsPage />} />
-            <Route path="/imports" element={<ImportsPage />} />
             <Route path="/budgets" element={<BudgetsPage />} />
             <Route path="/insights" element={<InsightsPage />} />
             <Route path="/goals" element={<GoalsPage />} />

@@ -43,6 +43,18 @@ export function listTransactions(
   );
 }
 
+export function listExpensesByCategory(
+  token: string,
+  categoryId: number,
+  dateFrom: string,
+  dateTo: string,
+): Promise<TransactionPage> {
+  return apiFetch<TransactionPage>(
+    `/transactions/?category_id=${categoryId}&date_from=${dateFrom}&date_to=${dateTo}&direction=expense&limit=200`,
+    token,
+  );
+}
+
 export function createTransaction(
   token: string,
   payload: TransactionInput,

@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
+import { Modal } from "../../components/Modal";
 import { useAuth } from "../auth/useAuth";
+import { ImportsPage } from "../imports/ImportsPage";
+import { getPreferences } from "../preferences/api";
 import {
   createAccount,
   createCategory,
@@ -38,6 +41,8 @@ export function TransactionsPage() {
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [newAccountName, setNewAccountName] = useState("");
   const [newAccountIsPrimary, setNewAccountIsPrimary] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
 
   const { from: dateFrom, to: dateTo } = monthRange(year, month);
 
@@ -62,6 +67,12 @@ export function TransactionsPage() {
   const summaryQuery = useQuery({
     queryKey: ["summary", year, month],
     queryFn: () => getMonthlySummary(token as string, year, month),
+    enabled: token !== null,
+  });
+
+  const preferencesQuery = useQuery({
+    queryKey: ["preferences"],
+    queryFn: () => getPreferences(token as string),
     enabled: token !== null,
   });
 
@@ -95,6 +106,8 @@ export function TransactionsPage() {
       void queryClient.invalidateQueries({ queryKey: ["transactions", dateFrom, dateTo] });
       void queryClient.invalidateQueries({ queryKey: ["summary", year, month] });
       void queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      void queryClient.invalidateQueries({ queryKey: ["preferences"] });
+      setShowAddModal(false);
     },
   });
 
@@ -127,17 +140,47 @@ export function TransactionsPage() {
   }, [year, month]);
 
   const accounts = accountsQuery.data ?? [];
+  const hasAccounts = accounts.length > 0;
+  const hasTransactionsEver = preferencesQuery.data?.has_transactions ?? false;
+
+  const addMovementForm = (
+    <TransactionForm
+      accounts={accounts}
+      categories={categoriesQuery.data ?? []}
+      defaultDate={defaultDate}
+      onSubmit={(input) => createTransactionMutation.mutate(input)}
+      onCreateCategory={(name) => createCategoryMutation.mutateAsync(name)}
+      isSubmitting={createTransactionMutation.isPending}
+    />
+  );
 
   return (
     <div className="expenses-page">
-      <MonthNavigator
-        year={year}
-        month={month}
-        onChange={(newYear, newMonth) => {
-          setYear(newYear);
-          setMonth(newMonth);
-        }}
-      />
+      <div className="expenses-toolbar">
+        <MonthNavigator
+          year={year}
+          month={month}
+          onChange={(newYear, newMonth) => {
+            setYear(newYear);
+            setMonth(newMonth);
+          }}
+        />
+
+        {hasAccounts && hasTransactionsEver && (
+          <div className="expenses-toolbar-actions">
+            <button type="button" onClick={() => setShowAddModal(true)}>
+              + Agregar movimiento
+            </button>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => setShowImportModal(true)}
+            >
+              📥 Importar estado de cuenta
+            </button>
+          </div>
+        )}
+      </div>
 
       <section className="expenses-summary">
         <StatTile
@@ -165,8 +208,8 @@ export function TransactionsPage() {
         )}
       </section>
 
-      <section>
-        {accounts.length === 0 && !accountsQuery.isLoading ? (
+      {!hasAccounts && !accountsQuery.isLoading && (
+        <section>
           <div className="expense-form">
             <h2>Crea tu primera cuenta</h2>
             <p className="page-status">Necesitas al menos una cuenta para registrar movimientos.</p>
@@ -202,17 +245,33 @@ export function TransactionsPage() {
               Crear cuenta
             </button>
           </div>
-        ) : (
-          <TransactionForm
-            accounts={accounts}
-            categories={categoriesQuery.data ?? []}
-            defaultDate={defaultDate}
-            onSubmit={(input) => createTransactionMutation.mutate(input)}
-            onCreateCategory={(name) => createCategoryMutation.mutateAsync(name)}
-            isSubmitting={createTransactionMutation.isPending}
-          />
-        )}
-      </section>
+        </section>
+      )}
+
+      {hasAccounts && !hasTransactionsEver && (
+        <>
+          <section>
+            <h2>Agregar movimiento</h2>
+            {addMovementForm}
+          </section>
+          <section>
+            <h2>Importar estado de cuenta</h2>
+            <ImportsPage />
+          </section>
+        </>
+      )}
+
+      {showAddModal && (
+        <Modal title="Agregar movimiento" onClose={() => setShowAddModal(false)}>
+          {addMovementForm}
+        </Modal>
+      )}
+
+      {showImportModal && (
+        <Modal title="Importar estado de cuenta" onClose={() => setShowImportModal(false)}>
+          <ImportsPage />
+        </Modal>
+      )}
     </div>
   );
 }

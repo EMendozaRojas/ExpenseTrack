@@ -3,11 +3,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as preferencesApi from "../preferences/api";
 import * as api from "./api";
 import { TransactionsPage } from "./TransactionsPage";
 import type { Account, TransactionPage } from "./types";
 
 vi.mock("./api");
+vi.mock("../preferences/api");
+vi.mock("../imports/api");
 vi.mock("../auth/useAuth", () => ({
   useAuth: () => ({ token: "test-token", user: { id: 1, email: "demo@example.com" } }),
 }));
@@ -89,6 +92,11 @@ describe("TransactionsPage", () => {
     vi.mocked(api.listCategories).mockResolvedValue(categories);
     vi.mocked(api.listTransactions).mockResolvedValue(transactions);
     vi.mocked(api.getMonthlySummary).mockResolvedValue(summary);
+    vi.mocked(preferencesApi.getPreferences).mockResolvedValue({
+      base_currency: "EUR",
+      locale: "es-ES",
+      has_transactions: true,
+    });
   });
 
   it("muestra el total del mes, el desglose por categoría y el listado de movimientos", async () => {
@@ -112,13 +120,14 @@ describe("TransactionsPage", () => {
     await waitFor(() => expect(api.deleteTransaction).toHaveBeenCalledWith("test-token", 1));
   });
 
-  it("agrega un movimiento nuevo usando el formulario", async () => {
+  it("agrega un movimiento nuevo desde el modal", async () => {
     const user = userEvent.setup();
     vi.mocked(api.createTransaction).mockResolvedValue(transactions.items[0]);
 
     renderPage();
 
     await screen.findByText("Supermercado");
+    await user.click(screen.getByRole("button", { name: "+ Agregar movimiento" }));
     await user.type(screen.getByLabelText("Monto"), "10");
     await user.click(screen.getByRole("button", { name: "Agregar movimiento" }));
 
@@ -130,11 +139,37 @@ describe("TransactionsPage", () => {
     );
   });
 
+  it("abre el modal de importar al hacer clic en el botón", async () => {
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await screen.findByText("Supermercado");
+    await user.click(screen.getByRole("button", { name: "📥 Importar estado de cuenta" }));
+
+    expect(await screen.findByRole("dialog", { name: "Importar estado de cuenta" })).toBeInTheDocument();
+  });
+
   it("ofrece crear una cuenta cuando el usuario no tiene ninguna", async () => {
     vi.mocked(api.listAccounts).mockResolvedValue([]);
 
     renderPage();
 
     expect(await screen.findByText("Crea tu primera cuenta")).toBeInTheDocument();
+  });
+
+  it("muestra los formularios en línea (sin modal) cuando el usuario no tiene movimientos todavía", async () => {
+    vi.mocked(api.listTransactions).mockResolvedValue({ items: [], next_cursor: null });
+    vi.mocked(preferencesApi.getPreferences).mockResolvedValue({
+      base_currency: "EUR",
+      locale: "es-ES",
+      has_transactions: false,
+    });
+
+    renderPage();
+
+    expect(await screen.findByText("Importar estado de cuenta")).toBeInTheDocument();
+    expect(screen.getByLabelText("Monto")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "+ Agregar movimiento" })).not.toBeInTheDocument();
   });
 });

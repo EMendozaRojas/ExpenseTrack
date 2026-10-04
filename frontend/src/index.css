@@ -283,11 +283,6 @@ label {
   line-height: 1;
 }
 
-.app-sidebar-logout {
-  width: 100%;
-  margin-top: 1rem;
-}
-
 .app-sidebar-footer {
   display: flex;
   justify-content: center;
@@ -301,18 +296,72 @@ label {
   max-width: 130px;
   height: auto;
   display: block;
-  mix-blend-mode: lighten;
+  animation: app-sidebar-logo-bounce 2.2s ease-in-out infinite;
+}
+
+@keyframes app-sidebar-logo-bounce {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(-2deg);
+  }
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 0.85rem 1.5rem;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+
+.app-topbar-bell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  font-size: 1.1rem;
+  text-decoration: none;
+}
+
+.app-topbar-bell:hover {
+  background: var(--surface-raised);
+}
+
+.app-topbar-bell .app-nav-badge {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  margin-left: 0;
 }
 
 .app-main {
   flex: 1;
+  width: 100%;
   min-width: 0;
-  max-width: 1040px;
-  margin: 0 auto;
   padding: 2rem 1.5rem;
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  box-sizing: border-box;
 }
 
 /* Month navigator */
@@ -336,6 +385,26 @@ label {
   text-transform: capitalize;
   min-width: 10ch;
   text-align: center;
+}
+
+.expenses-page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.expenses-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.expenses-toolbar-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 /* Stat tile / card KPI */
@@ -920,6 +989,46 @@ label {
   font-weight: 600;
 }
 
+.ant-spending-card-button {
+  width: 100%;
+  background: var(--surface-1);
+  color: inherit;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.ant-spending-card-button:hover {
+  background: var(--surface-2);
+}
+
+.ant-spending-card-expanded {
+  border-color: var(--accent-neutral);
+}
+
+.ant-spending-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.5rem 0.9rem 0.75rem;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 8px 8px;
+}
+
+.ant-spending-detail-row {
+  display: grid;
+  grid-template-columns: 90px 1fr auto;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.ant-spending-detail-amount {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-primary);
+}
+
 .recurring-card-amount {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -1097,6 +1206,17 @@ label {
 
 /* Preferences */
 
+.preferences-page {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 1.5rem;
+  align-items: start;
+}
+
+.preferences-page > h1 {
+  grid-column: 1 / -1;
+}
+
 .preferences-form {
   background: var(--surface-1);
   border: 1px solid var(--border);
@@ -1105,7 +1225,6 @@ label {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  max-width: 420px;
 }
 
 .preferences-warning {
@@ -1269,4 +1388,161 @@ label {
   padding: 0.1rem 0.45rem;
   min-width: 1.2rem;
   text-align: center;
+}
+
+/* Modal */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 100;
+}
+
+.modal-panel {
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  width: 100%;
+  max-width: 640px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal-header h2 {
+  margin: 0;
+}
+
+.modal-close {
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+/* Scrollbars delgados */
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Mobile */
+
+@media (max-width: 768px) {
+  .app-shell {
+    flex-direction: column;
+  }
+
+  .app-sidebar {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    gap: 0.5rem;
+    overflow-x: auto;
+    overflow-y: hidden;
+    z-index: 10;
+  }
+
+  .app-sidebar-profile,
+  .app-sidebar-footer {
+    display: none;
+  }
+
+  .app-nav {
+    flex-direction: row;
+    flex: none;
+    gap: 0.15rem;
+  }
+
+  .app-nav a {
+    flex-direction: column;
+    gap: 0.1rem;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.65rem;
+    white-space: nowrap;
+  }
+
+  .app-nav-icon {
+    font-size: 1.1rem;
+  }
+
+  .app-nav-badge {
+    margin-left: 0;
+  }
+
+  .app-topbar {
+    padding: 0.6rem 1rem;
+  }
+
+  .app-main {
+    max-width: 100%;
+    padding: 1rem;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .category-breakdown {
+    grid-template-columns: 1fr;
+  }
+
+  .income-expense-chart-row {
+    grid-template-columns: 56px 1fr auto;
+  }
+
+  .expenses-toolbar,
+  .dashboard-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .modal-panel {
+    padding: 1rem;
+    max-height: 95vh;
+  }
 }

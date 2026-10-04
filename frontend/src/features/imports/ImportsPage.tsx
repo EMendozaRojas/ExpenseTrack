@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { useAuth } from "../auth/useAuth";
@@ -13,8 +13,13 @@ const CLASSIFICATION_LABELS: Record<string, string> = {
   PROBABLE_DUPLICATE: "Posible duplicado",
 };
 
-export function ImportsPage() {
+interface ImportsPageProps {
+  onCommitted?: () => void;
+}
+
+export function ImportsPage({ onCommitted }: ImportsPageProps = {}) {
   const { token } = useAuth();
+  const queryClient = useQueryClient();
   const [accountId, setAccountId] = useState<number | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
@@ -44,7 +49,15 @@ export function ImportsPage() {
   const commitMutation = useMutation({
     mutationFn: () =>
       commitImport(token as string, preview!.id, strategy, Array.from(selectedRowIds)),
-    onSuccess: (data) => setResult(data),
+    onSuccess: (data) => {
+      setResult(data);
+      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["summary"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard-summary"] });
+      void queryClient.invalidateQueries({ queryKey: ["preferences"] });
+      void queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      onCommitted?.();
+    },
   });
 
   const hasDuplicates = useMemo(
@@ -68,7 +81,6 @@ export function ImportsPage() {
 
   return (
     <div className="imports-page">
-      <h1>Importar extracto bancario</h1>
       <p className="page-status">
         Por ahora solo CSV (máx. 5 MB / 10.000 filas). XLSX y PDF llegarán en un próximo cambio.
       </p>

@@ -100,7 +100,6 @@ export function TransactionForm({
 
   return (
     <form className="expense-form" onSubmit={handleSubmit}>
-      <h2>Agregar movimiento</h2>
       <div className="expense-form-grid">
         <label htmlFor="transaction-account">Cuenta</label>
         <select

@@ -3,11 +3,13 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as transactionsApi from "../transactions/api";
 import type { AntSpendingGroup, InsightSettings, RecurringSeries } from "../transactions/types";
 import * as insightsApi from "./api";
 import { InsightsPage } from "./InsightsPage";
 
 vi.mock("./api");
+vi.mock("../transactions/api");
 vi.mock("../auth/useAuth", () => ({
   useAuth: () => ({ token: "test-token", user: { id: 1, email: "demo@example.com" } }),
 }));
@@ -81,5 +83,43 @@ describe("InsightsPage", () => {
     await user.click(screen.getByRole("button", { name: "Descartar" }));
 
     expect(insightsApi.dismissRecurringSeries).toHaveBeenCalledWith("test-token", "expense:NETFLIX");
+  });
+
+  it("muestra los movimientos al hacer clic en una categoría de gasto hormiga", async () => {
+    const user = userEvent.setup();
+    vi.mocked(transactionsApi.listExpensesByCategory).mockResolvedValue({
+      items: [
+        {
+          id: 1,
+          account_id: 1,
+          owner_id: 1,
+          amount: "-3.50",
+          direction: "expense",
+          posted_at: "2026-10-03",
+          category_id: 3,
+          counterparty: null,
+          raw_description: null,
+          note: "Café",
+          source: "manual",
+          transfer_group_id: null,
+          created_at: "2026-10-03T00:00:00Z",
+          updated_at: "2026-10-03T00:00:00Z",
+        },
+      ],
+      next_cursor: null,
+    });
+
+    renderPage();
+    await screen.findByText("Cafeterías");
+
+    await user.click(screen.getByRole("button", { name: /Cafeterías/ }));
+
+    expect(await screen.findByText("Café")).toBeInTheDocument();
+    expect(transactionsApi.listExpensesByCategory).toHaveBeenCalledWith(
+      "test-token",
+      3,
+      expect.any(String),
+      expect.any(String),
+    );
   });
 });

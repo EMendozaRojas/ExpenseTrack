@@ -68,7 +68,7 @@ describe("AppLayout", () => {
     expect(await screen.findByText("Onboarding")).toBeInTheDocument();
   });
 
-  it("muestra el contador de notificaciones no leídas en el menú", async () => {
+  it("muestra el contador de notificaciones no leídas en el menú y en la campana superior", async () => {
     useAuthMock.mockReturnValue({
       user: { id: 1, email: "demo@example.com", full_name: "Demo User", has_avatar: false },
       token: "test-token",
@@ -78,6 +78,20 @@ describe("AppLayout", () => {
 
     renderAppLayout();
 
-    expect(await screen.findByText("3")).toBeInTheDocument();
+    expect((await screen.findAllByText("3")).length).toBe(2);
+  });
+
+  it("muestra el botón de cerrar sesión en la barra superior, no en el menú", async () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 1, email: "demo@example.com", full_name: "Demo User", has_avatar: false },
+      token: "test-token",
+      logout: logoutMock,
+    });
+
+    renderAppLayout();
+
+    const logoutButton = await screen.findByRole("button", { name: "Cerrar sesión" });
+    expect(logoutButton.closest(".app-topbar")).not.toBeNull();
+    expect(logoutButton.closest(".app-sidebar")).toBeNull();
   });
 });

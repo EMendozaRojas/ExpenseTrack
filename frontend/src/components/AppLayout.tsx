@@ -7,7 +7,6 @@ import { useAvatarUrl } from "../features/profile/useAvatarUrl";
 const NAV_ITEMS = [
   { to: "/", end: true, icon: "📊", label: "Estadísticas" },
   { to: "/transactions", icon: "💸", label: "Movimientos" },
-  { to: "/imports", icon: "📥", label: "Importar" },
   { to: "/budgets", icon: "🎯", label: "Presupuestos" },
   { to: "/goals", icon: "🏁", label: "Metas" },
   { to: "/insights", icon: "💡", label: "Análisis" },
@@ -67,23 +66,27 @@ export function AppLayout() {
           ))}
         </nav>
 
-        {user && (
-          <button
-            type="button"
-            className="button-secondary app-sidebar-logout"
-            onClick={handleLogout}
-          >
-            Cerrar sesión
-          </button>
-        )}
-
         <div className="app-sidebar-footer">
           <img className="app-sidebar-logo" src="/logo.png" alt="ExpenseTrack — Tus gastos, siempre contigo" />
         </div>
       </aside>
-      <main className="app-main">
-        <Outlet />
-      </main>
+
+      <div className="app-content">
+        <header className="app-topbar">
+          <NavLink to="/notifications" className="app-topbar-bell" aria-label="Notificaciones">
+            <span aria-hidden="true">🔔</span>
+            {unreadCount > 0 && <span className="app-nav-badge">{unreadCount}</span>}
+          </NavLink>
+          {user && (
+            <button type="button" className="button-secondary" onClick={handleLogout}>
+              Cerrar sesión
+            </button>
+          )}
+        </header>
+        <main className="app-main">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

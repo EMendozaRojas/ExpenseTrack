@@ -2,8 +2,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
 import { useAuth } from "../auth/useAuth";
+import { listExpensesByCategory } from "../transactions/api";
 import { MonthNavigator } from "../transactions/components/MonthNavigator";
-import { formatCurrency } from "../transactions/format";
+import { formatCurrency, pad2 } from "../transactions/format";
 import {
   dismissRecurringSeries,
   getInsightSettings,
@@ -14,12 +15,22 @@ import {
 
 const today = new Date();
 
+function monthRange(year: number, month: number): { from: string; to: string } {
+  const from = `${year}-${pad2(month)}-01`;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  const nextYear = month === 12 ? year + 1 : year;
+  const lastDay = new Date(nextYear, nextMonth - 1, 0).getDate();
+  const to = `${year}-${pad2(month)}-${pad2(lastDay)}`;
+  return { from, to };
+}
+
 export function InsightsPage() {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [showDismissed, setShowDismissed] = useState(false);
+  const [expandedCategoryId, setExpandedCategoryId] = useState<number | null>(null);
 
   const recurringQuery = useQuery({
     queryKey: ["insights-recurring"],
@@ -55,6 +66,19 @@ export function InsightsPage() {
   }, [recurringQuery.data, showDismissed]);
 
   const settings = settingsQuery.data;
+  const { from: monthFrom, to: monthTo } = monthRange(year, month);
+
+  const expandedTransactionsQuery = useQuery({
+    queryKey: ["insights-ant-spending-detail", expandedCategoryId, monthFrom, monthTo],
+    queryFn: () =>
+      listExpensesByCategory(token as string, expandedCategoryId as number, monthFrom, monthTo),
+    enabled: token !== null && expandedCategoryId !== null,
+  });
+
+  const maxAmount = settings ? Number(settings.ant_max_amount) : null;
+  const expandedTransactions = (expandedTransactionsQuery.data?.items ?? []).filter(
+    (transaction) => maxAmount === null || Math.abs(Number(transaction.amount)) <= maxAmount,
+  );
 
   return (
     <div className="insights-page">
@@ -138,15 +162,46 @@ export function InsightsPage() {
         )}
         {(antSpendingQuery.data ?? []).length > 0 && (
           <div className="ant-spending-list">
-            {(antSpendingQuery.data ?? []).map((group) => (
-              <div key={group.category_id} className="ant-spending-card">
-                <span className="recurring-card-label">{group.category_name}</span>
-                <span className="page-status">
-                  {group.occurrences} movimientos · media {formatCurrency(Number(group.avg_amount))}
-                </span>
-                <span className="recurring-card-amount">{formatCurrency(Number(group.aggregate))}</span>
-              </div>
-            ))}
+            {(antSpendingQuery.data ?? []).map((group) => {
+              const isExpanded = expandedCategoryId === group.category_id;
+              return (
+                <div key={group.category_id}>
+                  <button
+                    type="button"
+                    className={`ant-spending-card ant-spending-card-button ${isExpanded ? "ant-spending-card-expanded" : ""}`}
+                    onClick={() => setExpandedCategoryId(isExpanded ? null : group.category_id)}
+                  >
+                    <span className="recurring-card-label">{group.category_name}</span>
+                    <span className="page-status">
+                      {group.occurrences} movimientos · media{" "}
+                      {formatCurrency(Number(group.avg_amount))}
+                    </span>
+                    <span className="recurring-card-amount">
+                      {formatCurrency(Number(group.aggregate))}
+                    </span>
+                  </button>
+                  {isExpanded && (
+                    <div className="ant-spending-detail">
+                      {expandedTransactionsQuery.isLoading && (
+                        <p className="page-status">Cargando movimientos...</p>
+                      )}
+                      {!expandedTransactionsQuery.isLoading &&
+                        expandedTransactions.map((transaction) => (
+                          <div key={transaction.id} className="ant-spending-detail-row">
+                            <span>{transaction.posted_at}</span>
+                            <span>
+                              {transaction.note ?? transaction.raw_description ?? "Sin descripción"}
+                            </span>
+                            <span className="ant-spending-detail-amount">
+                              {formatCurrency(Math.abs(Number(transaction.amount)))}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
         <p className="page-hint">
