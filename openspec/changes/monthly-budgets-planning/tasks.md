@@ -34,12 +34,13 @@
 - [ ] 6.1 `features/budgets/api.ts` y tipos para la nueva API
 - [ ] 6.2 Formulario crear/editar: "Repetir cada mes" (activado por defecto), recomendación de la categoría elegida con "Usar sugerido"
 - [ ] 6.3 Diálogo de alcance "Solo este mes" / "Este mes y los siguientes" al editar y borrar un presupuesto que se repite, mencionando los meses planificados afectados
-- [ ] 6.4 Meses pasados en solo lectura (sin acciones, nota "lo gastado refleja tus movimientos actuales"); navegación a meses futuros para planificar
-- [ ] 6.5 Ritmo de gasto en la tarjeta del mes en curso ("a este ritmo acabarás en X")
-- [ ] 6.6 Botón "Copiar del mes anterior" con selección y montos editables
-- [ ] 6.7 Vista de recomendaciones con `basis` visible y acciones "Aplicar sugerido" / "Crear presupuesto"
-- [ ] 6.8 `AppLayout`: `POST /notifications/check` una vez por carga autenticada y luego invalidar el contador; `features/notifications/` muestra el resumen de cierre y el aviso de categoría borrada
-- [ ] 6.9 Tests de Vitest para 6.2–6.8
+- [ ] 6.4 Meses pasados en solo lectura (sin acciones ni formulario/botón de crear, nota "lo gastado refleja tus movimientos actuales"); navegación a meses futuros para planificar
+- [ ] 6.5 Formulario en la página / botón + modal según el mes visible: formulario en meses actuales o futuros sin presupuestos, botón cuando los hay, nada en meses pasados
+- [ ] 6.6 Ritmo de gasto en la tarjeta del mes en curso ("a este ritmo acabarás en X")
+- [ ] 6.7 Botón "Copiar del mes anterior" con selección y montos editables
+- [ ] 6.8 Vista de recomendaciones con `basis` visible y acciones "Aplicar sugerido" / "Crear presupuesto"
+- [ ] 6.9 `AppLayout`: `POST /notifications/check` una vez por carga autenticada y luego invalidar el contador; `features/notifications/` muestra el resumen de cierre y el aviso de categoría borrada
+- [ ] 6.10 Tests de Vitest para 6.2–6.9
 
 ## 7. Verificación
 

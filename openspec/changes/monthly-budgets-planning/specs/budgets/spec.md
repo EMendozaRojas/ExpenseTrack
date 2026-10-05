@@ -3,9 +3,13 @@
 ### Requirement: User can set a monthly spending cap on any expense category
 The system SHALL allow an authenticated user to create a budget for one of their visible expense categories (root or subcategory) in a given month, with an `amount` greater than zero and a `repeat` option that defaults to on. With `repeat` on, the same amount SHALL apply to that month and every following month until the user changes or deletes it. With `repeat` off, the budget SHALL apply only to that month. A category SHALL have at most one budget in any given month. The user SHALL be able to create budgets for the current month and for future months, but not for past months. Budgets SHALL be isolated per user. Budget amounts SHALL be expressed in the user's single currency.
 
-#### Scenario: Create a repeating budget
-- **WHEN** in October the user creates a 300.00 budget for "Alimentación" in October with `repeat` on
-- **THEN** "Alimentación" has a 300.00 budget in October, November and every later month
+#### Scenario: Create a budget on a root category
+- **WHEN** in October the user creates a 300.00 budget for their "Alimentación" root category in October with `repeat` on
+- **THEN** "Alimentación" has a 300.00 budget owned by that user in October, November and every later month
+
+#### Scenario: Create a budget on a subcategory
+- **WHEN** the user creates a budget for their "Suscripciones" subcategory
+- **THEN** the system stores it, independent of any budget on that subcategory's parent
 
 #### Scenario: Create a one-month budget
 - **WHEN** the user creates a 150.00 budget for "Ocio" in October with `repeat` off
@@ -19,7 +23,7 @@ The system SHALL allow an authenticated user to create a budget for one of their
 - **WHEN** in October the user creates a 600.00 budget for "Regalos" in December with `repeat` off
 - **THEN** "Regalos" has a budget only in December
 
-#### Scenario: Duplicate budget in the same month
+#### Scenario: Duplicate budget
 - **WHEN** the user creates a budget for a category that already has a budget in that month
 - **THEN** the system rejects the request with a conflict error
 
@@ -69,6 +73,10 @@ The system SHALL evaluate the budgets that apply to the current month and, for e
 - **WHEN** the user restores a deleted expense and it pushes a budget to 100%
 - **THEN** a `budget_exceeded` notification is created for that category and month
 
+#### Scenario: Exceeded notification
+- **WHEN** an expense pushes a budget to 100% or more in the current month
+- **THEN** a `budget_exceeded` notification is created for that category and month
+
 #### Scenario: Lowering the amount triggers a notification
 - **WHEN** the user lowers this month's amount so that current spending is now at 80% or more
 - **THEN** the corresponding notification is created
@@ -80,6 +88,41 @@ The system SHALL evaluate the budgets that apply to the current month and, for e
 #### Scenario: Past months never notify
 - **WHEN** a late import pushes a September budget past 100% in October
 - **THEN** no notification is created, and September shows the budget as `exceeded`
+
+### Requirement: Budget creation UI adapts to whether the user has budgets
+The budgets page SHALL show the "Nuevo presupuesto" form inline when the visible month is the current or a future month and the list of budgets returned for that month is empty. When that list has at least one budget, the page SHALL hide the inline form and SHALL show a "+ Nuevo presupuesto" button in the top toolbar, to the right of the month navigator, that opens the same form in a modal dialog. Because budgets are defined per month, the inline form SHALL appear in any current or future month without budgets, even if other months have them. In past months, which are read-only, the page SHALL show neither the inline form nor the button. While budgets are loading, the page SHALL show neither the inline form nor the button.
+
+#### Scenario: No budgets shows the inline form
+- **WHEN** the user opens the budgets page on the current month and it has no budgets
+- **THEN** the creation form is visible on the page and no "+ Nuevo presupuesto" button is shown
+
+#### Scenario: Existing budgets show the button instead of the form
+- **WHEN** the user opens the budgets page on a month with at least one budget
+- **THEN** the inline form is hidden and the "+ Nuevo presupuesto" button is shown in the top-right of the toolbar
+
+#### Scenario: Changing month keeps the button
+- **WHEN** the user moves from a month with budgets to another current or future month that also has budgets
+- **THEN** the button is still shown and the inline form stays hidden
+
+#### Scenario: Future month without budgets shows the inline form
+- **WHEN** the user moves to a future month that has no budgets, while other months have them
+- **THEN** the creation form is visible on the page for that month and no button is shown
+
+#### Scenario: Past months offer no creation
+- **WHEN** the user moves to a past month, with or without budgets
+- **THEN** neither the inline form nor the "+ Nuevo presupuesto" button is shown
+
+#### Scenario: Button opens the form in a modal
+- **WHEN** the user clicks "+ Nuevo presupuesto"
+- **THEN** a dialog titled "Nuevo presupuesto" opens containing the creation form
+
+#### Scenario: Modal closes after a successful creation
+- **WHEN** the user submits a valid budget from the modal and the API accepts it
+- **THEN** the modal closes and the list refreshes with the new budget
+
+#### Scenario: Modal stays open on error
+- **WHEN** the API rejects the budget created from the modal
+- **THEN** the modal stays open and shows the error message
 
 ## ADDED Requirements
 
