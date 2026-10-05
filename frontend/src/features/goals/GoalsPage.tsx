@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { Modal } from "../../components/Modal";
 import { useAuth } from "../auth/useAuth";
 import { formatCurrency } from "../transactions/format";
 import type { SavingsGoal } from "../transactions/types";
@@ -111,6 +112,7 @@ export function GoalsPage() {
   const [targetAmount, setTargetAmount] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const goalsQuery = useQuery({
     queryKey: ["goals"],
@@ -130,48 +132,68 @@ export function GoalsPage() {
       setTargetAmount("");
       setTargetDate("");
       setFormError(null);
+      setShowCreateModal(false);
       void queryClient.invalidateQueries({ queryKey: ["goals"] });
     },
     onError: (error: Error) => setFormError(error.message),
   });
 
   const goals = goalsQuery.data ?? [];
+  const hasGoals = goals.length > 0;
+
+  const goalForm = (
+    <div className="budget-form">
+      <div className="budget-form-grid">
+        <label htmlFor="goal-name">Nombre</label>
+        <input id="goal-name" value={name} onChange={(event) => setName(event.target.value)} />
+
+        <label htmlFor="goal-amount">Importe objetivo</label>
+        <input
+          id="goal-amount"
+          type="number"
+          min="0.01"
+          step="0.01"
+          value={targetAmount}
+          onChange={(event) => setTargetAmount(event.target.value)}
+        />
+
+        <label htmlFor="goal-date">Fecha objetivo (opcional)</label>
+        <input
+          id="goal-date"
+          type="date"
+          value={targetDate}
+          onChange={(event) => setTargetDate(event.target.value)}
+        />
+      </div>
+      <button
+        type="button"
+        disabled={!name || !targetAmount || createMutation.isPending}
+        onClick={() => createMutation.mutate()}
+      >
+        Crear meta
+      </button>
+      {formError && <p className="form-error">{formError}</p>}
+    </div>
+  );
 
   return (
     <div className="goals-page">
-      <section className="budget-form">
-        <h2>Nueva meta de ahorro</h2>
-        <div className="budget-form-grid">
-          <label htmlFor="goal-name">Nombre</label>
-          <input id="goal-name" value={name} onChange={(event) => setName(event.target.value)} />
-
-          <label htmlFor="goal-amount">Importe objetivo</label>
-          <input
-            id="goal-amount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            value={targetAmount}
-            onChange={(event) => setTargetAmount(event.target.value)}
-          />
-
-          <label htmlFor="goal-date">Fecha objetivo (opcional)</label>
-          <input
-            id="goal-date"
-            type="date"
-            value={targetDate}
-            onChange={(event) => setTargetDate(event.target.value)}
-          />
+      {hasGoals && (
+        <div className="expenses-toolbar expenses-toolbar-end">
+          <div className="expenses-toolbar-actions">
+            <button type="button" onClick={() => setShowCreateModal(true)}>
+              + Nueva meta
+            </button>
+          </div>
         </div>
-        <button
-          type="button"
-          disabled={!name || !targetAmount || createMutation.isPending}
-          onClick={() => createMutation.mutate()}
-        >
-          Crear meta
-        </button>
-        {formError && <p className="form-error">{formError}</p>}
-      </section>
+      )}
+
+      {!goalsQuery.isLoading && !hasGoals && (
+        <section>
+          <h2>Nueva meta de ahorro</h2>
+          {goalForm}
+        </section>
+      )}
 
       <section className="goal-list">
         <h2>Tus metas</h2>
@@ -183,6 +205,12 @@ export function GoalsPage() {
           <GoalCard key={goal.id} goal={goal} />
         ))}
       </section>
+
+      {showCreateModal && (
+        <Modal title="Nueva meta de ahorro" onClose={() => setShowCreateModal(false)}>
+          {goalForm}
+        </Modal>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 
+import { Modal } from "../../components/Modal";
 import { useAuth } from "../auth/useAuth";
 import { listCategories } from "../transactions/api";
 import { MonthNavigator } from "../transactions/components/MonthNavigator";
@@ -26,6 +27,7 @@ export function BudgetsPage() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingAmount, setEditingAmount] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   const budgetsQuery = useQuery({
     queryKey: ["budgets", year, month],
@@ -50,6 +52,7 @@ export function BudgetsPage() {
       setCategoryId("");
       setAmount("");
       setFormError(null);
+      setShowCreateModal(false);
       void queryClient.invalidateQueries({ queryKey: ["budgets", year, month] });
     },
     onError: (error: Error) => setFormError(error.message),
@@ -70,56 +73,73 @@ export function BudgetsPage() {
   });
 
   const budgets = budgetsQuery.data ?? [];
+  const hasBudgets = budgets.length > 0;
+
+  const budgetForm = (
+    <div className="budget-form">
+      <div className="budget-form-grid">
+        <label htmlFor="budget-category">Categoría</label>
+        <select
+          id="budget-category"
+          value={categoryId}
+          onChange={(event) => setCategoryId(event.target.value ? Number(event.target.value) : "")}
+        >
+          <option value="">Selecciona una categoría de gasto</option>
+          {expenseCategoryOptions.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        <label htmlFor="budget-amount">Tope mensual</label>
+        <input
+          id="budget-amount"
+          type="number"
+          min="0.01"
+          step="0.01"
+          value={amount}
+          onChange={(event) => setAmount(event.target.value)}
+        />
+      </div>
+      <button
+        type="button"
+        disabled={!categoryId || !amount || createMutation.isPending}
+        onClick={() => createMutation.mutate()}
+      >
+        Crear presupuesto
+      </button>
+      {formError && <p className="form-error">{formError}</p>}
+    </div>
+  );
 
   return (
     <div className="budgets-page">
-      <MonthNavigator
-        year={year}
-        month={month}
-        onChange={(newYear, newMonth) => {
-          setYear(newYear);
-          setMonth(newMonth);
-        }}
-      />
+      <div className="expenses-toolbar">
+        <MonthNavigator
+          year={year}
+          month={month}
+          onChange={(newYear, newMonth) => {
+            setYear(newYear);
+            setMonth(newMonth);
+          }}
+        />
 
-      <section className="budget-form">
-        <h2>Nuevo presupuesto</h2>
-        <div className="budget-form-grid">
-          <label htmlFor="budget-category">Categoría</label>
-          <select
-            id="budget-category"
-            value={categoryId}
-            onChange={(event) =>
-              setCategoryId(event.target.value ? Number(event.target.value) : "")
-            }
-          >
-            <option value="">Selecciona una categoría de gasto</option>
-            {expenseCategoryOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+        {hasBudgets && (
+          <div className="expenses-toolbar-actions">
+            <button type="button" onClick={() => setShowCreateModal(true)}>
+              + Nuevo presupuesto
+            </button>
+          </div>
+        )}
+      </div>
 
-          <label htmlFor="budget-amount">Tope mensual</label>
-          <input
-            id="budget-amount"
-            type="number"
-            min="0.01"
-            step="0.01"
-            value={amount}
-            onChange={(event) => setAmount(event.target.value)}
-          />
-        </div>
-        <button
-          type="button"
-          disabled={!categoryId || !amount || createMutation.isPending}
-          onClick={() => createMutation.mutate()}
-        >
-          Crear presupuesto
-        </button>
-        {formError && <p className="form-error">{formError}</p>}
-      </section>
+      {!budgetsQuery.isLoading && !hasBudgets && (
+        <section>
+          <h2>Nuevo presupuesto</h2>
+          {budgetForm}
+        </section>
+      )}
 
       <section className="budget-list">
         <h2>Presupuestos del mes</h2>
@@ -202,6 +222,12 @@ export function BudgetsPage() {
           );
         })}
       </section>
+
+      {showCreateModal && (
+        <Modal title="Nuevo presupuesto" onClose={() => setShowCreateModal(false)}>
+          {budgetForm}
+        </Modal>
+      )}
     </div>
   );
 }

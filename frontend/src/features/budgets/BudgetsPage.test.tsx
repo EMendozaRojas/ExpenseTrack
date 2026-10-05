@@ -82,7 +82,34 @@ describe("BudgetsPage", () => {
     expect(screen.getByText(/Cerca del límite/)).toBeInTheDocument();
   });
 
-  it("crea un presupuesto nuevo con la categoría y el importe elegidos", async () => {
+  it("oculta el formulario y lo abre en un modal desde el botón cuando ya hay presupuestos", async () => {
+    const user = userEvent.setup();
+    vi.mocked(budgetsApi.listBudgets).mockResolvedValue([
+      {
+        id: 1,
+        category_id: 2,
+        category_name: "Supermercado",
+        category_icon: null,
+        amount: "200.00",
+        is_active: true,
+        spent: "50.00",
+        pct: 25,
+        status: "ok",
+      },
+    ]);
+
+    renderPage();
+
+    await screen.findByText("Supermercado");
+    expect(screen.queryByLabelText("Tope mensual")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "+ Nuevo presupuesto" }));
+
+    expect(screen.getByRole("dialog", { name: "Nuevo presupuesto" })).toBeInTheDocument();
+    expect(screen.getByLabelText("Tope mensual")).toBeInTheDocument();
+  });
+
+  it("crea un presupuesto desde el formulario visible cuando no hay ninguno", async () => {
     const user = userEvent.setup();
     vi.mocked(budgetsApi.listBudgets).mockResolvedValue([]);
     vi.mocked(budgetsApi.createBudget).mockResolvedValue({

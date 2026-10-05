@@ -401,6 +401,10 @@ label {
   flex-wrap: wrap;
 }
 
+.expenses-toolbar-end {
+  justify-content: flex-end;
+}
+
 .expenses-toolbar-actions {
   display: flex;
   gap: 0.75rem;

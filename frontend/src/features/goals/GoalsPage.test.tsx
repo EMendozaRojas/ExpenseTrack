@@ -50,7 +50,16 @@ describe("GoalsPage", () => {
     expect(screen.getByText(/750,00/)).toBeInTheDocument();
   });
 
-  it("crea una meta nueva con el formulario", async () => {
+  it("muestra el formulario directamente cuando no hay metas", async () => {
+    vi.mocked(goalsApi.listGoals).mockResolvedValue([]);
+
+    renderPage();
+
+    expect(await screen.findByLabelText("Importe objetivo")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "+ Nueva meta" })).not.toBeInTheDocument();
+  });
+
+  it("crea una meta nueva desde el botón cuando ya hay metas", async () => {
     const user = userEvent.setup();
     vi.mocked(goalsApi.createGoal).mockResolvedValue({
       id: 2,
@@ -66,6 +75,10 @@ describe("GoalsPage", () => {
 
     renderPage();
     await screen.findByText("Fondo de emergencia");
+    expect(screen.queryByLabelText("Importe objetivo")).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole("button", { name: "+ Nueva meta" }));
+    expect(screen.getByRole("dialog", { name: "Nueva meta de ahorro" })).toBeInTheDocument();
 
     await user.type(screen.getByLabelText("Nombre"), "Viaje");
     await user.type(screen.getByLabelText("Importe objetivo"), "1500");
