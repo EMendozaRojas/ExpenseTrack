@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -35,6 +35,23 @@ function renderAppLayout() {
 describe("AppLayout", () => {
   beforeEach(() => {
     vi.mocked(notificationsApi.getUnreadCount).mockResolvedValue({ count: 0 });
+    vi.mocked(notificationsApi.checkNotifications).mockReset();
+    vi.mocked(notificationsApi.checkNotifications).mockResolvedValue(undefined);
+  });
+
+  it("revisa los avisos una vez al entrar y refresca el contador", async () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 1, email: "demo@example.com", full_name: "Demo User", has_avatar: false },
+      token: "test-token",
+      logout: logoutMock,
+    });
+    vi.mocked(notificationsApi.getUnreadCount).mockClear();
+
+    renderAppLayout();
+
+    await waitFor(() => expect(notificationsApi.getUnreadCount).toHaveBeenCalledTimes(2));
+    expect(notificationsApi.checkNotifications).toHaveBeenCalledTimes(1);
+    expect(notificationsApi.checkNotifications).toHaveBeenCalledWith("test-token");
   });
 
   it("muestra el nombre del usuario y cierra sesión al hacer clic", async () => {

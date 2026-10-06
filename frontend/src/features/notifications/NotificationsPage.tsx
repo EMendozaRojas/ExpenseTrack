@@ -7,6 +7,8 @@ import type { Notification, NotificationType } from "./types";
 const TYPE_ICON: Record<NotificationType, string> = {
   budget_warning: "⚠️",
   budget_exceeded: "🚨",
+  budget_month_summary: "📅",
+  budget_category_deleted: "🗂️",
   goal_near: "🏁",
   goal_reached: "🎉",
 };

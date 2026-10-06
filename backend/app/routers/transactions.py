@@ -276,6 +276,7 @@ def delete_transaction(
     else:
         transaction.deleted_at = now
     db.commit()
+    check_budget_notifications(db, current_user)
 
 
 def _get_owned_trashed_transaction(
@@ -346,6 +347,7 @@ def restore_transaction(
         transaction.deleted_at = None
     db.commit()
     db.refresh(transaction)
+    check_budget_notifications(db, current_user)
     return transaction
 
 
@@ -403,4 +405,5 @@ def bulk_categorize(
         .update({"category_id": payload.category_id}, synchronize_session=False)
     )
     db.commit()
+    check_budget_notifications(db, current_user)
     return BulkCategorizeResult(updated_count=updated)

@@ -2,6 +2,7 @@ from app.models.account import Account
 from app.models.attachment import Attachment
 from app.models.auth_identity import AuthIdentity
 from app.models.budget import Budget
+from app.models.budget_month import BudgetMonth
 from app.models.categorization_rule import CategorizationRule
 from app.models.category import Category
 from app.models.dismissed_recurring_series import DismissedRecurringSeries
@@ -26,6 +27,7 @@ __all__ = [
     "ImportBatch",
     "ImportRow",
     "Budget",
+    "BudgetMonth",
     "DismissedRecurringSeries",
     "SavingsGoal",
     "GoalContribution",

@@ -938,6 +938,71 @@ label {
   width: 90px;
 }
 
+.budget-tabs {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.budget-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.budget-scope {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.budget-note {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.budget-hint {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+  font-size: 0.9rem;
+}
+
+.budget-hint-basis {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.budget-card-badge {
+  margin-left: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.budget-card-pace {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.budget-card-pace-over {
+  color: var(--warning-text);
+}
+
+.budget-copy-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.budget-copy-row input[type="number"] {
+  width: 110px;
+}
+
 /* Insights */
 
 .insights-page {

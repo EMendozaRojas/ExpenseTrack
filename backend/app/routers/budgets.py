@@ -1,23 +1,38 @@
 from datetime import date
-from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, or_
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
+from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
-from app.models.budget import Budget
-from app.models.category import Category
-from app.models.transaction import Transaction
-from app.models.user import User
 from app.core.database import get_db
-from app.schemas.budget import BudgetCreate, BudgetRead, BudgetStatus, BudgetUpdate
+from app.models.category import Category
+from app.models.user import User
+from app.schemas.budget import (
+    BudgetCreate,
+    BudgetPace,
+    BudgetRecommendation,
+    BudgetStatus,
+    BudgetUpdate,
+    CopyPreviewItem,
+    CopyRequest,
+    CopyResult,
+    MonthlySpent,
+    PlannedMonthRead,
+    RecommendationBasis,
+    Scope,
+)
+from app.services import budget_calculator as calc
+from app.services import budget_operations as ops
+from app.services.budget_recommender import recommend
+from app.services.notifications import check_budget_notifications
 
 router = APIRouter(prefix="/budgets", tags=["budgets"])
 
-WARNING_THRESHOLD_PCT = 80
-EXCEEDED_THRESHOLD_PCT = 100
+PeriodParam = Annotated[str, Path(pattern=r"^\d{4}-(0[1-9]|1[0-2])$", description="Mes YYYY-MM")]
+YearQuery = Annotated[int, Query(ge=2000, le=2100)]
+MonthQuery = Annotated[int, Query(ge=1, le=12)]
 
 
 def _visible_expense_category(db: Session, category_id: int, current_user: User) -> Category:
@@ -37,149 +52,177 @@ def _visible_expense_category(db: Session, category_id: int, current_user: User)
     return category
 
 
-def _get_owned_budget(db: Session, budget_id: int, current_user: User) -> Budget:
-    budget = (
-        db.query(Budget)
-        .filter(Budget.id == budget_id, Budget.owner_id == current_user.id)
-        .first()
+def _raise_http(error: ops.BudgetError) -> None:
+    code = (
+        status.HTTP_404_NOT_FOUND
+        if isinstance(error, ops.BudgetNotFound)
+        else status.HTTP_409_CONFLICT
     )
-    if budget is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Presupuesto no encontrado")
-    return budget
+    raise HTTPException(status_code=code, detail=str(error)) from error
 
 
-def _spent_for_category(
-    db: Session, category: Category, owner_id: int, range_start: date, range_end: date
-) -> Decimal:
-    category_ids = [category.id]
-    if category.parent_id is None:
-        children = db.query(Category.id).filter(Category.parent_id == category.id).all()
-        category_ids += [c.id for c in children]
-
-    spent: Decimal | None = (
-        db.query(func.coalesce(func.sum(-Transaction.amount), 0))
-        .filter(
-            Transaction.owner_id == owner_id,
-            Transaction.deleted_at.is_(None),
-            Transaction.direction == "expense",
-            Transaction.category_id.in_(category_ids),
-            Transaction.posted_at >= range_start,
-            Transaction.posted_at < range_end,
-        )
-        .scalar()
-    )
-    return spent or Decimal("0")
-
-
-def _month_range(year: int, month: int) -> tuple[date, date]:
-    range_start = date(year, month, 1)
-    next_month = month + 1 if month < 12 else 1
-    next_year = year if month < 12 else year + 1
-    return range_start, date(next_year, next_month, 1)
-
-
-def _to_read(budget: Budget) -> BudgetRead:
-    return BudgetRead(
-        id=budget.id,
+def _to_status(evaluation: calc.BudgetEvaluation) -> BudgetStatus:
+    budget = evaluation.budget
+    return BudgetStatus(
         category_id=budget.category_id,
-        category_name=budget.category.name,
+        category_name=budget.category_name,
+        category_icon=budget.category.icon if budget.category else None,
+        month=calc.month_key(budget.month),
         amount=budget.amount,
-        is_active=budget.is_active,
-        created_at=budget.created_at,
+        repeats=budget.repeats,
+        source=budget.source,
+        editable=budget.month >= calc.current_month() and budget.category_id is not None,
+        spent=evaluation.spent,
+        pct=evaluation.pct,
+        status=evaluation.status,
+        pace=(
+            BudgetPace(projected=evaluation.pace.projected, will_exceed=evaluation.pace.will_exceed)
+            if evaluation.pace
+            else None
+        ),
     )
+
+
+def _status_for(db: Session, owner_id: int, category_id: int, month: date) -> BudgetStatus:
+    resolved = calc.resolve_one(db, owner_id, category_id, month)
+    assert resolved is not None
+    return _to_status(calc.evaluate(db, owner_id, [resolved], month)[0])
 
 
 @router.get("/", response_model=list[BudgetStatus])
 def list_budgets(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    year: Annotated[int, Query(ge=2000, le=2100)],
-    month: Annotated[int, Query(ge=1, le=12)],
+    year: YearQuery,
+    month: MonthQuery,
 ) -> list[BudgetStatus]:
-    range_start, range_end = _month_range(year, month)
-    budgets = (
-        db.query(Budget)
-        .filter(Budget.owner_id == current_user.id)
-        .order_by(Budget.created_at)
-        .all()
-    )
-
-    results: list[BudgetStatus] = []
-    for budget in budgets:
-        spent = _spent_for_category(db, budget.category, current_user.id, range_start, range_end)
-        pct = float(spent / budget.amount * 100) if budget.amount else 0.0
-        budget_status: str = (
-            "exceeded"
-            if pct >= EXCEEDED_THRESHOLD_PCT
-            else "warning"
-            if pct >= WARNING_THRESHOLD_PCT
-            else "ok"
-        )
-        results.append(
-            BudgetStatus(
-                id=budget.id,
-                category_id=budget.category_id,
-                category_name=budget.category.name,
-                category_icon=budget.category.icon,
-                amount=budget.amount,
-                is_active=budget.is_active,
-                spent=spent,
-                pct=round(pct, 1),
-                status=budget_status,
-            )
-        )
-    return results
+    return [_to_status(e) for e in calc.evaluate_month(db, current_user.id, date(year, month, 1))]
 
 
-@router.post("/", response_model=BudgetRead, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=BudgetStatus, status_code=status.HTTP_201_CREATED)
 def create_budget(
     payload: BudgetCreate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-) -> BudgetRead:
-    _visible_expense_category(db, payload.category_id, current_user)
+) -> BudgetStatus:
+    category = _visible_expense_category(db, payload.category_id, current_user)
+    month = date(payload.year, payload.month, 1)
+    try:
+        ops.create(db, current_user.id, category, month, payload.amount, payload.repeat)
+    except ops.BudgetError as error:
+        _raise_http(error)
+    check_budget_notifications(db, current_user)
+    return _status_for(db, current_user.id, category.id, month)
 
-    existing = (
-        db.query(Budget)
-        .filter(Budget.owner_id == current_user.id, Budget.category_id == payload.category_id)
-        .first()
-    )
-    if existing is not None:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="Ya existe un presupuesto para esta categoría",
+
+@router.get("/recommendations", response_model=list[BudgetRecommendation])
+def list_recommendations(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    category_id: int | None = None,
+) -> list[BudgetRecommendation]:
+    return [
+        BudgetRecommendation(
+            category_id=r.category.id,
+            category_name=r.category.name,
+            parent_id=r.category.parent_id,
+            flag=r.flag,
+            suggested_amount=r.suggested_amount,
+            current_amount=r.current_amount,
+            basis=RecommendationBasis(
+                months=[MonthlySpent(month=calc.month_key(m), spent=v) for m, v in r.monthly_spent],
+                mean=r.mean,
+                same_month_last_year=r.same_month_last_year,
+                share_pct=r.share_pct,
+                over_typical=r.over_typical,
+            ),
         )
-
-    budget = Budget(owner_id=current_user.id, category_id=payload.category_id, amount=payload.amount)
-    db.add(budget)
-    db.commit()
-    db.refresh(budget)
-    return _to_read(budget)
+        for r in recommend(db, current_user.id, category_id)
+    ]
 
 
-@router.patch("/{budget_id}", response_model=BudgetRead)
+@router.get("/copy-preview", response_model=list[CopyPreviewItem])
+def copy_preview(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    year: YearQuery,
+    month: MonthQuery,
+) -> list[CopyPreviewItem]:
+    target = date(year, month, 1)
+    if target < calc.current_month():
+        return []
+    return [
+        CopyPreviewItem(category_id=b.category_id, category_name=b.category_name, amount=b.amount)
+        for b in ops.copy_preview(db, current_user.id, target)
+        if b.category_id is not None
+    ]
+
+
+@router.post("/copy", response_model=CopyResult)
+def copy_budgets(
+    payload: CopyRequest,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> CopyResult:
+    items = [
+        (_visible_expense_category(db, item.category_id, current_user), item.amount)
+        for item in payload.items
+    ]
+    try:
+        created, skipped = ops.copy(
+            db, current_user.id, date(payload.year, payload.month, 1), items
+        )
+    except ops.BudgetError as error:
+        _raise_http(error)
+    check_budget_notifications(db, current_user)
+    return CopyResult(created=created, skipped=skipped)
+
+
+@router.get("/{category_id}/planned", response_model=list[PlannedMonthRead])
+def planned_months(
+    category_id: int,
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+    from_: Annotated[str, Query(alias="from", pattern=r"^\d{4}-(0[1-9]|1[0-2])$")],
+) -> list[PlannedMonthRead]:
+    _visible_expense_category(db, category_id, current_user)
+    return [
+        PlannedMonthRead(month=calc.month_key(p.month), amount=p.amount, kind=p.kind)
+        for p in ops.planned_after(db, current_user.id, category_id, calc.parse_month_key(from_))
+    ]
+
+
+@router.put("/{category_id}/{period}", response_model=BudgetStatus)
 def update_budget(
-    budget_id: int,
+    category_id: int,
+    period: PeriodParam,
     payload: BudgetUpdate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-) -> BudgetRead:
-    budget = _get_owned_budget(db, budget_id, current_user)
-    if payload.amount is not None:
-        budget.amount = payload.amount
-    if payload.is_active is not None:
-        budget.is_active = payload.is_active
-    db.commit()
-    db.refresh(budget)
-    return _to_read(budget)
+) -> BudgetStatus:
+    category = _visible_expense_category(db, category_id, current_user)
+    month = calc.parse_month_key(period)
+    try:
+        ops.update(
+            db, current_user.id, category, month, payload.amount, payload.scope, payload.repeat
+        )
+    except ops.BudgetError as error:
+        _raise_http(error)
+    check_budget_notifications(db, current_user)
+    return _status_for(db, current_user.id, category.id, month)
 
 
-@router.delete("/{budget_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{category_id}/{period}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_budget(
-    budget_id: int,
+    category_id: int,
+    period: PeriodParam,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
+    scope: Scope = "this",
 ) -> None:
-    budget = _get_owned_budget(db, budget_id, current_user)
-    db.delete(budget)
-    db.commit()
+    category = _visible_expense_category(db, category_id, current_user)
+    try:
+        ops.delete(db, current_user.id, category, calc.parse_month_key(period), scope)
+    except ops.BudgetError as error:
+        _raise_http(error)
+    check_budget_notifications(db, current_user)

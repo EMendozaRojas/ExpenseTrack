@@ -18,3 +18,9 @@ export function markNotificationRead(token: string, notificationId: number): Pro
 export function markAllNotificationsRead(token: string): Promise<void> {
   return apiFetch<void>("/notifications/read-all", token, { method: "POST" });
 }
+
+/** Revisión al entrar a la app: crea los avisos de presupuesto que falten y
+ * el resumen de cierre del mes anterior. */
+export function checkNotifications(token: string): Promise<void> {
+  return apiFetch<void>("/notifications/check", token, { method: "POST" });
+}

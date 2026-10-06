@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from datetime import date
 
 import pytest
 from fastapi.testclient import TestClient
@@ -94,3 +95,16 @@ def make_account(db_session: Session):
         return account
 
     return _make
+
+
+@pytest.fixture
+def set_today(monkeypatch):
+    """Fija el "hoy" de los presupuestos (mes en curso, meses pasados de solo
+    lectura, ritmo). Se puede llamar varias veces en un mismo test para
+    avanzar el reloj."""
+    import app.services.budget_calculator as budget_calculator
+
+    def _set(value: date) -> None:
+        monkeypatch.setattr(budget_calculator, "today", lambda: value)
+
+    return _set

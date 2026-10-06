@@ -96,30 +96,79 @@ export interface DashboardCategoryNode {
 
 export type BudgetStatusValue = "ok" | "warning" | "exceeded";
 
-export interface Budget {
-  id: number;
-  category_id: number;
-  category_name: string;
-  amount: string;
-  is_active: boolean;
-  created_at: string;
+export type BudgetSource = "series" | "override" | "single";
+
+export type BudgetScope = "this" | "following";
+
+export interface BudgetPace {
+  projected: string;
+  will_exceed: boolean;
 }
 
 export interface BudgetWithStatus {
-  id: number;
-  category_id: number;
+  /** `null` en meses conservados de una categoría ya borrada. */
+  category_id: number | null;
   category_name: string;
   category_icon: string | null;
+  /** Mes al que corresponde, "YYYY-MM". */
+  month: string;
   amount: string;
-  is_active: boolean;
+  repeats: boolean;
+  source: BudgetSource;
+  editable: boolean;
   spent: string;
   pct: number;
   status: BudgetStatusValue;
+  pace: BudgetPace | null;
 }
 
 export interface BudgetInput {
   category_id: number;
+  year: number;
+  month: number;
   amount: string;
+  repeat: boolean;
+}
+
+export interface BudgetUpdateInput {
+  amount: string;
+  scope: BudgetScope;
+  repeat?: boolean;
+}
+
+export interface PlannedBudgetMonth {
+  month: string;
+  amount: string;
+  kind: "override" | "single" | "series";
+}
+
+export interface BudgetCopyPreviewItem {
+  category_id: number;
+  category_name: string;
+  amount: string;
+}
+
+export interface BudgetCopyResult {
+  created: number[];
+  skipped: number[];
+}
+
+export type BudgetRecommendationFlag = "raise" | "lower" | "keep" | "create";
+
+export interface BudgetRecommendation {
+  category_id: number;
+  category_name: string;
+  parent_id: number | null;
+  flag: BudgetRecommendationFlag;
+  suggested_amount: string;
+  current_amount: string | null;
+  basis: {
+    months: { month: string; spent: string }[];
+    mean: string;
+    same_month_last_year: string | null;
+    share_pct: number | null;
+    over_typical: boolean | null;
+  };
 }
 
 export type GoalStatus = "active" | "completed" | "archived";

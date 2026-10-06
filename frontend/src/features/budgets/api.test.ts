@@ -1,6 +1,15 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { createBudget, deleteBudget, listBudgets, updateBudget } from "./api";
+import {
+  copyBudgets,
+  createBudget,
+  deleteBudget,
+  getCopyPreview,
+  listBudgets,
+  listPlannedMonths,
+  listRecommendations,
+  updateBudget,
+} from "./api";
 
 function mockFetchOnce(body: unknown, status = 200) {
   const fetchMock = vi.fn().mockResolvedValue({
@@ -27,34 +36,63 @@ describe("budgets api", () => {
     expect(init.headers.Authorization).toBe("Bearer token-123");
   });
 
-  it("createBudget envía category_id y amount", async () => {
-    const fetchMock = mockFetchOnce({ id: 1 });
+  it("createBudget envía categoría, mes, monto y repetir", async () => {
+    const fetchMock = mockFetchOnce({});
+    const payload = { category_id: 5, year: 2026, month: 10, amount: "200.00", repeat: true };
 
-    await createBudget("token-123", { category_id: 5, amount: "200.00" });
+    await createBudget("token-123", payload);
 
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toContain("/budgets/");
     expect(init.method).toBe("POST");
-    expect(JSON.parse(init.body as string)).toEqual({ category_id: 5, amount: "200.00" });
+    expect(JSON.parse(init.body as string)).toEqual(payload);
   });
 
-  it("updateBudget hace PATCH sobre /budgets/{id}", async () => {
-    const fetchMock = mockFetchOnce({ id: 1 });
+  it("updateBudget hace PUT sobre /budgets/{categoría}/{mes} con el alcance", async () => {
+    const fetchMock = mockFetchOnce({});
 
-    await updateBudget("token-123", 1, { amount: "250.00" });
+    await updateBudget("token-123", 5, "2026-11", { amount: "250.00", scope: "following" });
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain("/budgets/1");
-    expect(init.method).toBe("PATCH");
+    expect(url).toContain("/budgets/5/2026-11");
+    expect(init.method).toBe("PUT");
+    expect(JSON.parse(init.body as string)).toEqual({ amount: "250.00", scope: "following" });
   });
 
-  it("deleteBudget hace DELETE sobre /budgets/{id}", async () => {
+  it("deleteBudget hace DELETE con el alcance en la query", async () => {
     const fetchMock = mockFetchOnce(undefined, 204);
 
-    await deleteBudget("token-123", 1);
+    await deleteBudget("token-123", 5, "2026-11", "this");
 
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toContain("/budgets/1");
+    expect(url).toContain("/budgets/5/2026-11?scope=this");
     expect(init.method).toBe("DELETE");
+  });
+
+  it("listPlannedMonths, getCopyPreview y listRecommendations usan sus rutas", async () => {
+    const fetchMock = mockFetchOnce([]);
+
+    await listPlannedMonths("token-123", 5, "2026-11");
+    await getCopyPreview("token-123", 2026, 11);
+    await listRecommendations("token-123", 5);
+    await listRecommendations("token-123");
+
+    const urls = fetchMock.mock.calls.map((call) => call[0] as string);
+    expect(urls[0]).toContain("/budgets/5/planned?from=2026-11");
+    expect(urls[1]).toContain("/budgets/copy-preview?year=2026&month=11");
+    expect(urls[2]).toContain("/budgets/recommendations?category_id=5");
+    expect(urls[3]).toMatch(/\/budgets\/recommendations$/);
+  });
+
+  it("copyBudgets hace POST con los items elegidos", async () => {
+    const fetchMock = mockFetchOnce({ created: [5], skipped: [] });
+    const payload = { year: 2026, month: 11, items: [{ category_id: 5, amount: "100.00" }] };
+
+    await copyBudgets("token-123", payload);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toContain("/budgets/copy");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body as string)).toEqual(payload);
   });
 });

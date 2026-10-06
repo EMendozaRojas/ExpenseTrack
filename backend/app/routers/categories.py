@@ -10,7 +10,9 @@ from app.models.category import Category
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.category import CategoryCreate, CategoryDeleteResult, CategoryRead
+from app.services.budget_operations import freeze_for_category
 from app.services.categorizer import uncategorized_category_id
+from app.services.notifications import notify_budget_category_deleted
 
 router = APIRouter(prefix="/categories", tags=["categories"])
 
@@ -131,6 +133,11 @@ def delete_category(
             status_code=status.HTTP_404_NOT_FOUND, detail="Categoría no encontrada"
         )
 
+    # Antes de reasignar sus movimientos: conserva lo gastado en los meses
+    # pasados de sus presupuestos (después caería a 0).
+    category_name = category.name
+    had_budgets = freeze_for_category(db, current_user.id, category)
+
     new_parent_id = category.parent_id
     subcategories = db.query(Category).filter(Category.parent_id == category.id).all()
     for sub in subcategories:
@@ -149,6 +156,8 @@ def delete_category(
 
     db.delete(category)
     db.commit()
+    if had_budgets:
+        notify_budget_category_deleted(db, current_user, category_id, category_name)
 
     return CategoryDeleteResult(
         reassigned_transactions=reassigned_transactions,

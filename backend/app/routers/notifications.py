@@ -8,6 +8,7 @@ from app.core.database import get_db
 from app.models.notification import Notification
 from app.models.user import User
 from app.schemas.notification import NotificationRead, UnreadCount
+from app.services.notifications import check_budget_notifications, create_month_summary
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -47,6 +48,17 @@ def unread_count(
         .count()
     )
     return UnreadCount(count=count)
+
+
+@router.post("/check", status_code=status.HTTP_204_NO_CONTENT)
+def check_notifications(
+    db: Annotated[Session, Depends(get_db)],
+    current_user: Annotated[User, Depends(get_current_user)],
+) -> None:
+    """Revisión al entrar a la app: crea los avisos de presupuesto del mes en
+    curso que falten y el resumen de cierre del mes anterior."""
+    check_budget_notifications(db, current_user)
+    create_month_summary(db, current_user)
 
 
 @router.post("/{notification_id}/read", response_model=NotificationRead)

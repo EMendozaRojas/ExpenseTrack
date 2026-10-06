@@ -1,6 +1,7 @@
 import { Navigate, NavLink, Outlet, useNavigate } from "react-router";
 
 import { useAuth } from "../features/auth/useAuth";
+import { useNotificationsCheck } from "../features/notifications/useNotificationsCheck";
 import { useUnreadCount } from "../features/notifications/useUnreadCount";
 import { useAvatarUrl } from "../features/profile/useAvatarUrl";
 
@@ -23,6 +24,7 @@ export function AppLayout() {
   const navigate = useNavigate();
   const avatarUrl = useAvatarUrl(token, user?.has_avatar ?? false);
   const unreadCount = useUnreadCount(token);
+  useNotificationsCheck(token);
 
   function handleLogout() {
     logout();

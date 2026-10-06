@@ -1,4 +1,10 @@
-export type NotificationType = "budget_warning" | "budget_exceeded" | "goal_near" | "goal_reached";
+export type NotificationType =
+  | "budget_warning"
+  | "budget_exceeded"
+  | "budget_month_summary"
+  | "budget_category_deleted"
+  | "goal_near"
+  | "goal_reached";
 
 export interface Notification {
   id: number;

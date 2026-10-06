@@ -5,7 +5,14 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
 
-NOTIFICATION_TYPES = ("budget_warning", "budget_exceeded", "goal_near", "goal_reached")
+NOTIFICATION_TYPES = (
+    "budget_warning",
+    "budget_exceeded",
+    "budget_month_summary",
+    "budget_category_deleted",
+    "goal_near",
+    "goal_reached",
+)
 
 
 class Notification(Base):

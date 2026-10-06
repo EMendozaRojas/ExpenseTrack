@@ -20,6 +20,7 @@ from app.schemas.imports import (
     ImportRowRead,
 )
 from app.services.categorizer import match_category, uncategorized_category_id
+from app.services.notifications import check_budget_notifications
 from app.services.reconciler import external_hash, find_probable_duplicate
 from app.services.statement_parser import StatementParseError, parse_csv
 
@@ -282,6 +283,7 @@ def commit_import(
     batch.skipped_count = skipped_count
     batch.committed_at = now
     db.commit()
+    check_budget_notifications(db, current_user)
 
     return ImportCommitResult(
         id=batch.id,
