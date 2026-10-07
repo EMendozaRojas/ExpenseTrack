@@ -101,19 +101,23 @@ proyecto de este tamaño.
 
 - **Conventional Commits** (`feat:`, `fix:`, `chore:`, `docs:`, `test:`,
   `refactor:`) para mensajes de commit consistentes y legibles en el
-  historial.
+  historial: el prefijo en inglés y el resto del mensaje en español (ej.
+  `feat: presupuestos mensuales con repetición`). Se aplica desde el
+  2026-10-07; los commits anteriores no lo seguían y se dejan como están.
 - **Pre-commit hooks** (via [pre-commit](https://pre-commit.com/)) que
   corren Ruff, mypy, ESLint y Prettier automáticamente antes de cada
-  commit, para no depender de acordarse de correrlos a mano.
+  commit. **Pendiente de activar:** la configuración existe, pero activarla
+  hoy bloquearía los commits por avisos antiguos de lint y tipos y por el
+  tamaño de las imágenes de `Design System/`. Se activará cuando se
+  resuelva esa deuda; mientras tanto, los checks se corren a mano.
 - Commits pequeños y con un solo propósito, aunque sea un proyecto de una
   sola persona — así se ve y se practica como se trabaja en equipo.
 
 ## CI y cobertura
 
-- **CI (GitHub Actions):** se deja para más adelante — el proyecto es solo
-  local por ahora y aún no hay repo remoto. Mientras tanto, la calidad se
-  garantiza con **pre-commit hooks** (ver [`.pre-commit-config.yaml`](./.pre-commit-config.yaml)),
-  que corren Ruff, mypy y los checks básicos antes de cada commit.
+- **CI (GitHub Actions):** se deja para más adelante. Mientras tanto, la
+  calidad se comprueba corriendo a mano los tests, Ruff, mypy, ESLint y
+  Prettier (ver la sección de pre-commit, pendiente de activar).
 - **Cobertura mínima de tests: 70%**, medida con `coverage.py` en el
   backend y con el reporte de cobertura de Vitest en el frontend. Es un
   piso, no un objetivo a perseguir con tests superficiales.
@@ -130,4 +134,5 @@ pre-commit install --hook-type commit-msg
 
 A partir de ahí, cada `git commit` corre automáticamente Ruff (lint +
 formato), mypy, y validación de que el mensaje siga Conventional Commits.
+(Aún no activado en este proyecto: ver "Git y commits".)
 Configuración completa en [`.pre-commit-config.yaml`](./.pre-commit-config.yaml).
