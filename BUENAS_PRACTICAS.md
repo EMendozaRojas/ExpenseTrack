@@ -25,12 +25,17 @@ justificación explícita.
 validación "fail fast" (el backend no arranca si falta una variable
 requerida), en vez de leer `os.environ` sueltos por el código.
 
-**Errores:** esquema de respuesta de error consistente en toda la API
-(`code`, `message`, `details`), usando los `HTTPException` / exception
-handlers de FastAPI en vez de dejar que exploten errores no controlados.
+**Errores:** respuesta de error consistente en toda la API, con el formato
+estándar de FastAPI: `{"detail": "<mensaje en español>"}` (en los errores de
+validación `422`, `detail` es una lista con `loc`, `msg` y `type`). Se usan
+`HTTPException` en vez de dejar que exploten errores no controlados, y los
+errores de cada endpoint se documentan en OpenAPI con el esquema común
+`ErrorResponse` (`app/core/openapi.py`).
 
 **Testing:** `pytest`, con fixtures para la base de datos de test
-(contenedor Postgres separado o transacciones con rollback). Priorizar
+(transacciones con rollback sobre la base de desarrollo, ver
+`tests/conftest.py`). Cuando la lógica depende de la fecha, el "hoy" se fija
+con un fixture (`set_today`) en vez de depender del reloj. Priorizar
 tests de la lógica de negocio y de los endpoints críticos (crear/clasificar
 gastos) sobre perseguir 100% de cobertura.
 
@@ -45,8 +50,9 @@ discriminados para estados (ej. loading/error/success).
 **Calidad de código:** ESLint (flat config) + Prettier.
 
 **Estructura por features**, no por tipo de archivo: cada funcionalidad
-(ej. `expenses/`, `categories/`, `auth/`) agrupa sus propios componentes,
-hooks y tipos, en vez de carpetas globales `components/`, `hooks/`, etc.
+(ej. `transactions/`, `budgets/`, `auth/`) agrupa sus propios componentes,
+hooks y tipos; `src/components/` queda solo para piezas compartidas (layout,
+modal…).
 
 **Estado:** `useState`/`useReducer` para estado local de UI, **TanStack
 Query** para todo lo que venga del backend (fetch, cache, invalidación) en
@@ -60,17 +66,23 @@ proyecto de este tamaño.
 
 - Prefijo de versión en la URL: `/api/v1/...`, para poder introducir cambios
   incompatibles en el futuro sin romper el frontend actual.
-- Recursos en plural: `/expenses`, `/categories`, no verbos en la URL.
+- Recursos en plural: `/transactions`, `/categories`, no verbos en la URL
+  (salvo acciones explícitas como `/accounts/{id}/archive`).
 - Códigos HTTP correctos (`201` al crear, `404` si no existe, `422` en
   validación fallida, etc.).
-- Paginación predecible en listados (ej. `/expenses?page=1&page_size=20`)
-  desde el inicio, para no tener que rediseñar cuando haya muchos gastos.
+- Paginación por cursor en los listados que crecen sin límite (movimientos:
+  `/transactions?limit=50&cursor=...`, con `next_cursor` en la respuesta),
+  que no repite ni salta elementos aunque se inserten datos nuevos.
+- Documentación en español en `/docs` y contrato versionado en
+  `backend/openapi.json`; tests que fallan si un endpoint o un campo queda
+  sin documentar o si el contrato no está al día.
 
 ## Docker
 
-- **Multi-stage builds** en ambos Dockerfiles (backend y frontend): una
-  etapa de build y una etapa final mínima que solo contiene lo necesario
-  para correr.
+- **Multi-stage builds** en ambos Dockerfiles: hoy hay una etapa `base` y
+  una `dev` (con dependencias de desarrollo y recarga en caliente). Como no
+  hay despliegue previsto, la etapa final mínima de producción se añadirá
+  cuando haga falta.
 - Contenedores corren con **usuario no-root**.
 - `.dockerignore` en ambos proyectos (mínimo: `.env`, `.git`,
   `__pycache__`, `node_modules`).

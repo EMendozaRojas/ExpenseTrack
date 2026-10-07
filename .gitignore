@@ -23,6 +23,10 @@ coverage/
 
 # Alembic (se versionan las migraciones, no los artefactos locales)
 
+# Claude Code: ajustes personales (los skills y comandos de OpenSpec sí se versionan)
+.claude/settings.json
+.claude/settings.local.json
+
 # Editores / OS
 .vscode/
 .idea/
