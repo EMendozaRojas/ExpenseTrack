@@ -4,18 +4,22 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-AccountType = Literal["checking", "savings", "credit_card", "cash", "wallet"]
+AccountType = Literal["general", "checking", "savings", "credit_card", "cash", "wallet"]
 
 
 _TYPE_DESCRIPTION = (
-    "Tipo de cuenta: `checking` (corriente), `savings` (ahorro), `credit_card` (tarjeta de "
-    "crédito), `cash` (efectivo) o `wallet` (monedero digital)."
+    "Tipo de cuenta: `general` (sin especificar), `checking` (corriente), `savings` (ahorro), "
+    "`credit_card` (tarjeta de crédito), `cash` (efectivo) o `wallet` (monedero digital)."
 )
 
 
 class AccountCreate(BaseModel):
     name: str = Field(description="Nombre de la cuenta.", examples=["Cuenta Principal"])
-    type: AccountType = Field(description=_TYPE_DESCRIPTION, examples=["checking"])
+    type: AccountType = Field(
+        default="general",
+        description=_TYPE_DESCRIPTION + " Opcional; por defecto `general`.",
+        examples=["general"],
+    )
     currency: str = Field(
         default="EUR",
         min_length=3,

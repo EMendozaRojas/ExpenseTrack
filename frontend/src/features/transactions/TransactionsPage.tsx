@@ -80,7 +80,6 @@ export function TransactionsPage() {
     mutationFn: (input: { name: string; isPrimary: boolean }) =>
       createAccount(token as string, {
         name: input.name,
-        type: "cash",
         currency: "EUR",
         is_primary: input.isPrimary,
       }),
@@ -218,7 +217,7 @@ export function TransactionsPage() {
               <input
                 id="new-account-name"
                 type="text"
-                placeholder="Efectivo"
+                placeholder="Mi cuenta"
                 value={newAccountName}
                 onChange={(event) => setNewAccountName(event.target.value)}
               />

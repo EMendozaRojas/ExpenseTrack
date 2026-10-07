@@ -5472,6 +5472,7 @@
           "type": {
             "type": "string",
             "enum": [
+              "general",
               "checking",
               "savings",
               "credit_card",
@@ -5479,9 +5480,10 @@
               "wallet"
             ],
             "title": "Type",
-            "description": "Tipo de cuenta: `checking` (corriente), `savings` (ahorro), `credit_card` (tarjeta de crédito), `cash` (efectivo) o `wallet` (monedero digital).",
+            "description": "Tipo de cuenta: `general` (sin especificar), `checking` (corriente), `savings` (ahorro), `credit_card` (tarjeta de crédito), `cash` (efectivo) o `wallet` (monedero digital). Opcional; por defecto `general`.",
+            "default": "general",
             "examples": [
-              "checking"
+              "general"
             ]
           },
           "currency": {
@@ -5523,8 +5525,7 @@
         },
         "type": "object",
         "required": [
-          "name",
-          "type"
+          "name"
         ],
         "title": "AccountCreate"
       },
@@ -5548,7 +5549,7 @@
           "type": {
             "type": "string",
             "title": "Type",
-            "description": "Tipo de cuenta: `checking` (corriente), `savings` (ahorro), `credit_card` (tarjeta de crédito), `cash` (efectivo) o `wallet` (monedero digital)."
+            "description": "Tipo de cuenta: `general` (sin especificar), `checking` (corriente), `savings` (ahorro), `credit_card` (tarjeta de crédito), `cash` (efectivo) o `wallet` (monedero digital)."
           },
           "currency": {
             "type": "string",
@@ -5626,6 +5627,7 @@
               {
                 "type": "string",
                 "enum": [
+                  "general",
                   "checking",
                   "savings",
                   "credit_card",
@@ -5638,7 +5640,7 @@
               }
             ],
             "title": "Type",
-            "description": "Tipo de cuenta: `checking` (corriente), `savings` (ahorro), `credit_card` (tarjeta de crédito), `cash` (efectivo) o `wallet` (monedero digital).",
+            "description": "Tipo de cuenta: `general` (sin especificar), `checking` (corriente), `savings` (ahorro), `credit_card` (tarjeta de crédito), `cash` (efectivo) o `wallet` (monedero digital).",
             "examples": [
               "savings"
             ]

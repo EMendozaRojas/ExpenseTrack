@@ -12,7 +12,8 @@ export interface Category {
   children: Category[];
 }
 
-export type AccountType = "checking" | "savings" | "credit_card" | "cash" | "wallet";
+/** `general` = sin especificar (la primera cuenta se crea así). */
+export type AccountType = "general" | "checking" | "savings" | "credit_card" | "cash" | "wallet";
 
 export interface Account {
   id: number;
@@ -30,7 +31,8 @@ export interface Account {
 
 export interface AccountInput {
   name: string;
-  type: AccountType;
+  /** Si se omite, el backend usa `general`. */
+  type?: AccountType;
   currency?: string;
   initial_balance?: string;
   is_primary?: boolean;
@@ -68,7 +70,6 @@ export interface TransactionPage {
   items: Transaction[];
   next_cursor: string | null;
 }
-
 
 export interface CategorySummary {
   category_id: number;

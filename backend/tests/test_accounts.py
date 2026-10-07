@@ -111,3 +111,12 @@ def test_only_one_primary_account_at_a_time(client: TestClient, auth_headers) ->
     accounts_after = client.get("/api/v1/accounts/", headers=headers).json()
     primary_ids_after = [a["id"] for a in accounts_after if a["is_primary"]]
     assert primary_ids_after == [first["id"]]
+
+
+def test_create_account_without_type_defaults_to_general(client: TestClient, auth_headers) -> None:
+    headers, _ = auth_headers()
+
+    response = client.post("/api/v1/accounts/", json={"name": "Mi cuenta"}, headers=headers)
+
+    assert response.status_code == 201
+    assert response.json()["type"] == "general"

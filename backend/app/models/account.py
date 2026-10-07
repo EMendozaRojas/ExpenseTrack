@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from app.models.transaction import Transaction
     from app.models.user import User
 
-ACCOUNT_TYPES = ("checking", "savings", "credit_card", "cash", "wallet")
+ACCOUNT_TYPES = ("general", "checking", "savings", "credit_card", "cash", "wallet")
 
 
 class Account(Base):

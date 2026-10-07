@@ -16,7 +16,7 @@ Ver `proposal.md` — Why. Separado de `monthly-budgets-planning` el 2026-10-05 
 
 ### D1 — Presets de metas: endpoint en backend
 - El plan original calculaba los presets en el frontend desde `/stats`, pero ese endpoint no existe. Se crea `GET /goals/suggestions`, que calcula todo en backend y devuelve el `basis` de cada preset.
-- Fondo de emergencia: `6 × media de gasto mensual` (3 meses naturales completos anteriores al actual); meses de cobertura = saldos de cuentas no archivadas `cash`/`checking`/`wallet` (reusando el cálculo de saldo existente) / media de gasto mensual; tramo según el Apéndice C de `budgets-and-savings-goals`.
+- Fondo de emergencia: `6 × media de gasto mensual` (3 meses naturales completos anteriores al actual); meses de cobertura = saldos de cuentas no archivadas `general`/`cash`/`checking`/`wallet` (reusando el cálculo de saldo existente) / media de gasto mensual; tramo según el Apéndice C de `budgets-and-savings-goals`.
 - Independencia financiera: `25 × gasto de los 12 meses naturales completos previos`.
 - Sin gasto en la ventana → preset sin `target_amount` y marcado como "sin datos suficientes".
 - Frontend: selector "Empezar desde una sugerencia" en el formulario de crear meta, que rellena nombre e importe editables.

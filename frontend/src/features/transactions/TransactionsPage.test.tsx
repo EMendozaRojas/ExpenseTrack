@@ -150,12 +150,34 @@ describe("TransactionsPage", () => {
     expect(await screen.findByRole("dialog", { name: "Importar estado de cuenta" })).toBeInTheDocument();
   });
 
-  it("ofrece crear una cuenta cuando el usuario no tiene ninguna", async () => {
+  it("ofrece crear una cuenta cuando el usuario no tiene ninguna, sin tipo", async () => {
+    const user = userEvent.setup();
     vi.mocked(api.listAccounts).mockResolvedValue([]);
+    vi.mocked(api.createAccount).mockResolvedValue({
+      id: 9,
+      owner_id: 1,
+      name: "Ahorros",
+      type: "general",
+      currency: "EUR",
+      initial_balance: "0.00",
+      balance: "0.00",
+      is_archived: false,
+      is_primary: false,
+      created_at: "2026-10-07T00:00:00Z",
+      updated_at: "2026-10-07T00:00:00Z",
+    });
 
     renderPage();
 
     expect(await screen.findByText("Crea tu primera cuenta")).toBeInTheDocument();
+    const name = screen.getByLabelText("Nombre");
+    expect(name).toHaveAttribute("placeholder", "Mi cuenta");
+    await user.type(name, "Ahorros");
+    await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
+
+    const payload = vi.mocked(api.createAccount).mock.calls[0][1];
+    expect(payload.name).toBe("Ahorros");
+    expect(payload).not.toHaveProperty("type");
   });
 
   it("muestra los formularios en línea (sin modal) cuando el usuario no tiene movimientos todavía", async () => {

@@ -2,7 +2,7 @@
 
 ### Requirement: System suggests goals from reference financial frameworks
 On `GET /goals/suggestions`, the system SHALL return two goal presets computed from the user's own data:
-- **Fondo de emergencia**: `target_amount = 6 × average monthly expense` over the three complete calendar months before the current one. The response SHALL also include the current months of coverage (`liquid assets / average monthly expense`, where liquid assets is the sum of balances of the user's non-archived accounts of type `cash`, `checking` or `wallet`) and its band: `critical` (< 1), `minimum` (1–3), `adequate` (3–6), `strong` (6–12) or `exceptional` (≥ 12).
+- **Fondo de emergencia**: `target_amount = 6 × average monthly expense` over the three complete calendar months before the current one. The response SHALL also include the current months of coverage (`liquid assets / average monthly expense`, where liquid assets is the sum of balances of the user's non-archived accounts of type `general`, `cash`, `checking` or `wallet`) and its band: `critical` (< 1), `minimum` (1–3), `adequate` (3–6), `strong` (6–12) or `exceptional` (≥ 12).
 - **Independencia financiera**: `target_amount = 25 × annual expense`, where annual expense is the user's total expense over the twelve complete calendar months before the current one.
 
 Each preset SHALL include the values used in the calculation. When the user has no expenses in the relevant window, the preset SHALL be returned without a `target_amount` and flagged as not enough data. Presets are suggestions only: creating a goal SHALL NOT require or validate against them.
