@@ -36,4 +36,4 @@ FastAPI genera la documentación de la API en `/docs` y `/redoc`, pero hoy está
 - **Backend**: nuevo `app/core/openapi.py` (introducción, tags, esquema de error común y ayudas para declarar errores); `app/main.py` (metadatos de la app y opciones de Swagger UI); todos los routers de `app/routers/` (títulos, descripciones, errores, tags y parámetros); todos los esquemas de `app/schemas/` (descripción y ejemplos de los campos); nuevo `scripts/export_openapi.py`; nuevo `backend/openapi.json`; nuevos tests `tests/test_openapi_docs.py` (completitud) y `tests/test_openapi_snapshot.py` (sincronía).
 - **Frontend**: sin cambios (los tags no afectan al cliente; `operationId` y rutas no cambian).
 - **Documentación del proyecto**: `CLAUDE.md` explica cómo regenerar `openapi.json`.
-- **Infra / dependencias**: sin cambios.
+- **Infra / dependencias**: `docker-compose.yml` monta `backend/openapi.json` en el contenedor del backend (una línea); sin dependencias nuevas.

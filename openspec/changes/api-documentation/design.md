@@ -75,7 +75,7 @@ El orden de `OPENAPI_TAGS` es el de la tabla (flujo natural: entrar, configurar,
 - Validadores, tipos y valores por defecto no cambian.
 
 ### D6 — `openapi.json` versionado
-- Ruta: `backend/openapi.json`, junto al código que lo genera.
+- Ruta: `backend/openapi.json`, junto al código que lo genera. Como el contenedor del backend solo monta carpetas concretas (`app`, `tests`, `scripts`…), se añade a `docker-compose.yml` el montaje `./backend/openapi.json:/app/openapi.json` para que el script lo escriba en el repo y el test lo lea. (Ajuste descubierto al implementar, 2026-10-07.)
 - `scripts/export_openapi.py` escribe `json.dumps(app.openapi(), indent=2, ensure_ascii=False) + "\n"`. Es determinista porque FastAPI construye el documento en el orden de registro de las rutas. Se ejecuta con `docker compose exec backend python -m scripts.export_openapi`.
 - `tests/test_openapi_snapshot.py` compara el archivo con `app.openapi()` (como objetos, no como texto) y, si difieren, falla indicando el comando para regenerarlo.
 - `CLAUDE.md` añade el comando en "Cómo se corren los tests" o en una sección propia.

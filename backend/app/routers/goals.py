@@ -3,12 +3,13 @@ from datetime import date, timezone
 from decimal import Decimal
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.core.database import get_db
+from app.core.openapi import AUTH_RESPONSES, Tag, error_responses
 from app.models.account import Account
 from app.models.goal_contribution import GoalContribution
 from app.models.savings_goal import SavingsGoal
@@ -23,7 +24,13 @@ from app.schemas.goal import (
 )
 from app.services.notifications import check_goal_notifications
 
-router = APIRouter(prefix="/goals", tags=["goals"])
+router = APIRouter(prefix="/goals", tags=[Tag.METAS], responses=AUTH_RESPONSES)
+
+GoalId = Annotated[int, Path(description="Id de la meta.", examples=[222])]
+_GOAL_NOT_FOUND = error_responses(
+    404, e404=("La meta no existe o es de otro usuario.", "Meta no encontrada")
+)
+_ACCOUNT_NOT_FOUND = "La meta, o la cuenta vinculada, no existe o es de otro usuario."
 
 PROJECTION_WINDOW_MONTHS = 3
 _DAYS_IN_MONTH = (31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
@@ -99,11 +106,13 @@ def _to_read(db: Session, goal: SavingsGoal) -> GoalRead:
     )
 
 
-@router.get("/", response_model=list[GoalRead])
+@router.get("/", response_model=list[GoalRead], summary="Listar metas")
 def list_goals(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[GoalRead]:
+    """Metas del usuario, de la más antigua a la más reciente, con lo
+    aportado y el porcentaje de avance."""
     goals = (
         db.query(SavingsGoal)
         .filter(SavingsGoal.owner_id == current_user.id)
@@ -113,12 +122,22 @@ def list_goals(
     return [_to_read(db, goal) for goal in goals]
 
 
-@router.post("/", response_model=GoalRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=GoalRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear meta",
+    responses=error_responses(
+        404, e404=("La cuenta vinculada no existe o es de otro usuario.", "Cuenta no encontrada")
+    ),
+)
 def create_goal(
     payload: GoalCreate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> GoalRead:
+    """Crea una meta activa sin aportaciones. La cuenta vinculada es solo
+    informativa: el progreso sale de las aportaciones, no del saldo."""
     if payload.linked_account_id is not None:
         account = (
             db.query(Account)
@@ -143,13 +162,21 @@ def create_goal(
     return _to_read(db, goal)
 
 
-@router.patch("/{goal_id}", response_model=GoalRead)
+@router.patch(
+    "/{goal_id}",
+    response_model=GoalRead,
+    summary="Editar meta",
+    responses=error_responses(404, e404=_ACCOUNT_NOT_FOUND),
+)
 def update_goal(
-    goal_id: int,
+    goal_id: GoalId,
     payload: GoalUpdate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> GoalRead:
+    """Cambia los campos enviados; el resto no cambia. Permite archivar la
+    meta (`status: archived`). Los campos opcionales no se pueden vaciar
+    enviando `null`."""
     goal = _get_owned_goal(db, goal_id, current_user)
     if payload.name is not None:
         goal.name = payload.name
@@ -175,26 +202,39 @@ def update_goal(
     return _to_read(db, goal)
 
 
-@router.delete("/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{goal_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Borrar meta",
+    responses=_GOAL_NOT_FOUND,
+)
 def delete_goal(
-    goal_id: int,
+    goal_id: GoalId,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
+    """Borra la meta y sus aportaciones de forma definitiva."""
     goal = _get_owned_goal(db, goal_id, current_user)
     db.delete(goal)
     db.commit()
 
 
 @router.post(
-    "/{goal_id}/contributions", response_model=ContributionRead, status_code=status.HTTP_201_CREATED
+    "/{goal_id}/contributions",
+    response_model=ContributionRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Registrar una aportación",
+    responses=_GOAL_NOT_FOUND,
 )
 def add_contribution(
-    goal_id: int,
+    goal_id: GoalId,
     payload: ContributionCreate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ContributionRead:
+    """Suma una aportación a la meta. No crea ningún movimiento en las
+    cuentas. Al llegar al 80% crea la notificación `goal_near`, y al 100%
+    `goal_reached` y la meta activa pasa a `completed`."""
     goal = _get_owned_goal(db, goal_id, current_user)
 
     contribution = GoalContribution(
@@ -223,12 +263,18 @@ def add_contribution(
     )
 
 
-@router.get("/{goal_id}/contributions", response_model=list[ContributionRead])
+@router.get(
+    "/{goal_id}/contributions",
+    response_model=list[ContributionRead],
+    summary="Listar las aportaciones de una meta",
+    responses=_GOAL_NOT_FOUND,
+)
 def list_contributions(
-    goal_id: int,
+    goal_id: GoalId,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[ContributionRead]:
+    """Aportaciones de la meta, de la más reciente a la más antigua."""
     goal = _get_owned_goal(db, goal_id, current_user)
     contributions = (
         db.query(GoalContribution)
@@ -249,13 +295,26 @@ def list_contributions(
     ]
 
 
-@router.delete("/{goal_id}/contributions/{contribution_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{goal_id}/contributions/{contribution_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Borrar una aportación",
+    responses=error_responses(
+        404,
+        e404=(
+            "La meta o la aportación no existe, o es de otro usuario.",
+            "Aportación no encontrada",
+        ),
+    ),
+)
 def delete_contribution(
-    goal_id: int,
-    contribution_id: int,
+    goal_id: GoalId,
+    contribution_id: Annotated[int, Path(description="Id de la aportación.", examples=[31])],
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
+    """Borra una aportación. Si la meta ya estaba `completed`, sigue así
+    aunque baje del objetivo."""
     goal = _get_owned_goal(db, goal_id, current_user)
     contribution = (
         db.query(GoalContribution)
@@ -270,12 +329,24 @@ def delete_contribution(
     db.commit()
 
 
-@router.get("/{goal_id}/projection", response_model=GoalProjection)
+@router.get(
+    "/{goal_id}/projection",
+    response_model=GoalProjection,
+    summary="Proyectar cuándo se alcanzará la meta",
+    responses=_GOAL_NOT_FOUND,
+)
 def get_projection(
-    goal_id: int,
+    goal_id: GoalId,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> GoalProjection:
+    """Estima la fecha al ritmo actual: media mensual aportada en los 3 meses
+    naturales completos anteriores al actual (solo los posteriores a la
+    creación de la meta; los meses sin aportación cuentan como 0).
+
+    - Ya alcanzada: 0 meses restantes y la fecha de hoy.
+    - Sin ningún mes completo desde la creación, o con ritmo 0:
+      `has_enough_data: false` y sin fecha."""
     goal = _get_owned_goal(db, goal_id, current_user)
     today = date.today()
     current = _current_amount(db, goal.id)

@@ -1,14 +1,19 @@
 from datetime import date
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class FxRateCreate(BaseModel):
-    rate_date: date
-    base: str
-    quote: str
-    rate: Decimal
+    rate_date: date = Field(description="Día al que corresponde.", examples=["2026-10-07"])
+    base: str = Field(
+        description="Moneda de origen (código ISO 4217; se pasa a mayúsculas).", examples=["USD"]
+    )
+    quote: str = Field(description="Moneda de destino (código ISO 4217).", examples=["EUR"])
+    rate: Decimal = Field(
+        description="Unidades de `quote` por una unidad de `base`. Mayor que cero.",
+        examples=["0.9215"],
+    )
 
     @field_validator("base", "quote")
     @classmethod
@@ -29,8 +34,8 @@ class FxRateCreate(BaseModel):
 class FxRateRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    rate_date: date
-    base: str
-    quote: str
-    rate: Decimal
+    id: int = Field(description="Id del tipo de cambio.")
+    rate_date: date = Field(description="Día al que corresponde.")
+    base: str = Field(description="Moneda de origen.")
+    quote: str = Field(description="Moneda de destino.")
+    rate: Decimal = Field(description="Unidades de `quote` por una unidad de `base`.")

@@ -3,12 +3,13 @@ import uuid
 from datetime import date, datetime, timedelta
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.core.database import get_db
+from app.core.openapi import AUTH_RESPONSES, Tag, error_responses
 from app.models.account import Account
 from app.models.categorization_rule import CategorizationRule
 from app.models.category import Category
@@ -28,7 +29,15 @@ from app.services.fx import MissingFxRateError, convert
 from app.services.notifications import check_budget_notifications
 from app.services.transaction_retention import RETENTION_DAYS, purge_expired_transactions
 
-router = APIRouter(prefix="/transactions", tags=["transactions"])
+router = APIRouter(prefix="/transactions", tags=[Tag.MOVIMIENTOS], responses=AUTH_RESPONSES)
+
+TransactionId = Annotated[int, Path(description="Id del movimiento.", examples=[3233])]
+_TRANSACTION_NOT_FOUND = "El movimiento no existe, está en la papelera o es de otro usuario."
+_INVALID_TRANSACTION = (
+    "Datos no válidos: signo del importe incoherente con `direction`, categoría raíz en lugar "
+    "de subcategoría o falta el tipo de cambio para la moneda indicada.",
+    "Una transacción debe asignarse a una subcategoría, no a la categoría principal",
+)
 
 
 def _autocategorize(
@@ -116,19 +125,57 @@ def _get_owned_transaction(db: Session, transaction_id: int, current_user: User)
     return transaction
 
 
-@router.get("/", response_model=TransactionPage)
+@router.get(
+    "/",
+    response_model=TransactionPage,
+    summary="Listar movimientos",
+    responses=error_responses(400, e400=("El `cursor` no es válido.", "Cursor inválido")),
+)
 def list_transactions(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    account_id: int | None = None,
-    category_id: int | None = None,
-    direction: str | None = None,
-    date_from: date | None = None,
-    date_to: date | None = None,
-    q: str | None = None,
-    limit: Annotated[int, Query(ge=1, le=MAX_PAGE_SIZE)] = DEFAULT_PAGE_SIZE,
-    cursor: str | None = None,
+    account_id: Annotated[
+        int | None, Query(description="Solo los de esta cuenta.", examples=[1110])
+    ] = None,
+    category_id: Annotated[
+        int | None,
+        Query(
+            description="Solo los de esta categoría (no incluye sus subcategorías).",
+            examples=[95],
+        ),
+    ] = None,
+    direction: Annotated[
+        str | None,
+        Query(
+            description="Solo los de este tipo: `income`, `expense` o `transfer`.",
+            examples=["expense"],
+        ),
+    ] = None,
+    date_from: Annotated[
+        date | None, Query(description="Desde esta fecha (incluida).", examples=["2026-10-01"])
+    ] = None,
+    date_to: Annotated[
+        date | None, Query(description="Hasta esta fecha (incluida).", examples=["2026-10-31"])
+    ] = None,
+    q: Annotated[
+        str | None,
+        Query(
+            description="Texto a buscar (sin distinguir mayúsculas) en la nota, la descripción "
+            "original y la contraparte.",
+            examples=["mercadona"],
+        ),
+    ] = None,
+    limit: Annotated[
+        int, Query(ge=1, le=MAX_PAGE_SIZE, description="Tamaño de página (1–200).", examples=[50])
+    ] = DEFAULT_PAGE_SIZE,
+    cursor: Annotated[
+        str | None,
+        Query(description="`next_cursor` de la página anterior; omitir en la primera página."),
+    ] = None,
 ) -> TransactionPage:
+    """Movimientos no borrados del usuario, del más reciente al más antiguo,
+    con filtros opcionales combinables. Paginación por cursor: si
+    `next_cursor` no es `null`, hay más páginas."""
     query = db.query(Transaction).filter(
         Transaction.owner_id == current_user.id, Transaction.deleted_at.is_(None)
     )
@@ -174,12 +221,31 @@ def list_transactions(
     return TransactionPage(items=items, next_cursor=next_cursor)
 
 
-@router.post("/", response_model=TransactionRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=TransactionRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Registrar movimiento",
+    responses=error_responses(
+        404,
+        422,
+        e404="La cuenta, o la categoría indicada, no existe o es de otro usuario.",
+        e422=_INVALID_TRANSACTION,
+    ),
+)
 def create_transaction(
     payload: TransactionCreate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> Transaction:
+    """Registra un ingreso o un gasto (las transferencias van por
+    `POST /transactions/transfer`).
+
+    - Sin `category_id`, se aplican las reglas de categorización sobre la
+      contraparte (o la nota); si ninguna coincide, va a "Sin Clasificar".
+    - Si `currency` difiere de la moneda de la cuenta, el importe se convierte
+      con el tipo de cambio de esa fecha (`422` si no existe).
+    - Después revisa los avisos de presupuesto del mes en curso."""
     account = _get_owned_account(db, payload.account_id, current_user)
     _check_category(db, payload.category_id, current_user)
 
@@ -222,13 +288,31 @@ def create_transaction(
     return transaction
 
 
-@router.patch("/{transaction_id}", response_model=TransactionRead)
+@router.patch(
+    "/{transaction_id}",
+    response_model=TransactionRead,
+    summary="Editar movimiento",
+    responses=error_responses(
+        404,
+        409,
+        422,
+        e404=_TRANSACTION_NOT_FOUND + " También si la categoría no es visible.",
+        e409=(
+            "Es una transferencia: no se puede editar.",
+            "No se puede editar una transferencia; bórrala y créala de nuevo",
+        ),
+        e422=_INVALID_TRANSACTION,
+    ),
+)
 def update_transaction(
-    transaction_id: int,
+    transaction_id: TransactionId,
     payload: TransactionUpdate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> Transaction:
+    """Reemplaza importe, tipo, fecha, categoría, contraparte y nota (hay que
+    enviarlos todos). Sin `category_id`, va a "Sin Clasificar". No cambia la
+    cuenta ni la moneda. Después revisa los avisos de presupuesto."""
     transaction = _get_owned_transaction(db, transaction_id, current_user)
     if transaction.direction == "transfer":
         raise HTTPException(
@@ -252,12 +336,20 @@ def update_transaction(
     return transaction
 
 
-@router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{transaction_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Mover movimiento a la papelera",
+    responses=error_responses(404, e404=_TRANSACTION_NOT_FOUND),
+)
 def delete_transaction(
-    transaction_id: int,
+    transaction_id: TransactionId,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
+    """Borrado suave: el movimiento va a la papelera durante 30 días y
+    después se elimina definitivamente. En una transferencia se borran los
+    dos lados. Después revisa los avisos de presupuesto."""
     purge_expired_transactions(db)
     transaction = _get_owned_transaction(db, transaction_id, current_user)
     now = datetime.now(tz=transaction.created_at.tzinfo)
@@ -298,11 +390,14 @@ def _get_owned_trashed_transaction(
     return transaction
 
 
-@router.get("/trash", response_model=list[TransactionTrashRead])
+@router.get("/trash", response_model=list[TransactionTrashRead], summary="Listar la papelera")
 def list_trash(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[TransactionTrashRead]:
+    """Movimientos borrados en los últimos 30 días, del borrado más reciente
+    al más antiguo, con la fecha en que se eliminarán definitivamente. Antes
+    de responder purga los que ya caducaron."""
     purge_expired_transactions(db)
     rows = (
         db.query(Transaction)
@@ -323,12 +418,25 @@ def list_trash(
     return items
 
 
-@router.post("/{transaction_id}/restore", response_model=TransactionRead)
+@router.post(
+    "/{transaction_id}/restore",
+    response_model=TransactionRead,
+    summary="Restaurar desde la papelera",
+    responses=error_responses(
+        404,
+        e404=(
+            "El movimiento no está en la papelera (ya caducó o no existe).",
+            "Movimiento no encontrado en la papelera",
+        ),
+    ),
+)
 def restore_transaction(
-    transaction_id: int,
+    transaction_id: TransactionId,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> Transaction:
+    """Saca el movimiento de la papelera (en una transferencia, los dos
+    lados). Después revisa los avisos de presupuesto."""
     purge_expired_transactions(db)
     transaction = _get_owned_trashed_transaction(db, transaction_id, current_user)
     if transaction.transfer_group_id is not None:
@@ -351,12 +459,23 @@ def restore_transaction(
     return transaction
 
 
-@router.post("/transfer", response_model=list[TransactionRead], status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/transfer",
+    response_model=list[TransactionRead],
+    status_code=status.HTTP_201_CREATED,
+    summary="Registrar transferencia entre cuentas",
+    responses=error_responses(
+        404, e404="Alguna de las dos cuentas no existe o es de otro usuario."
+    ),
+)
 def create_transfer(
     payload: TransferCreate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[Transaction]:
+    """Crea dos movimientos de tipo `transfer` enlazados por
+    `transfer_group_id`: la salida (negativa) en la cuenta de origen y la
+    entrada (positiva) en la de destino. No cuentan como ingreso ni gasto."""
     from_account = _get_owned_account(db, payload.from_account_id, current_user)
     to_account = _get_owned_account(db, payload.to_account_id, current_user)
 
@@ -388,12 +507,25 @@ def create_transfer(
     return [outgoing, incoming]
 
 
-@router.post("/bulk-categorize", response_model=BulkCategorizeResult)
+@router.post(
+    "/bulk-categorize",
+    response_model=BulkCategorizeResult,
+    summary="Recategorizar movimientos en bloque",
+    responses=error_responses(
+        404,
+        422,
+        e404="La categoría no existe o es de otro usuario.",
+        e422=_INVALID_TRANSACTION,
+    ),
+)
 def bulk_categorize(
     payload: BulkCategorizeRequest,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> BulkCategorizeResult:
+    """Asigna una subcategoría a varios movimientos. Los ids que no existen,
+    están en la papelera o son de otro usuario se ignoran (`updated_count`
+    dice cuántos cambiaron). Después revisa los avisos de presupuesto."""
     _check_category(db, payload.category_id, current_user)
     updated = (
         db.query(Transaction)

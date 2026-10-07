@@ -7,32 +7,70 @@ from pydantic import BaseModel, ConfigDict, Field
 AccountType = Literal["checking", "savings", "credit_card", "cash", "wallet"]
 
 
+_TYPE_DESCRIPTION = (
+    "Tipo de cuenta: `checking` (corriente), `savings` (ahorro), `credit_card` (tarjeta de "
+    "crédito), `cash` (efectivo) o `wallet` (monedero digital)."
+)
+
+
 class AccountCreate(BaseModel):
-    name: str
-    type: AccountType
-    currency: str = Field(default="EUR", min_length=3, max_length=3)
-    initial_balance: Decimal = Decimal("0")
-    is_primary: bool = False
+    name: str = Field(description="Nombre de la cuenta.", examples=["Cuenta Principal"])
+    type: AccountType = Field(description=_TYPE_DESCRIPTION, examples=["checking"])
+    currency: str = Field(
+        default="EUR",
+        min_length=3,
+        max_length=3,
+        description="Moneda de la cuenta (código ISO 4217; se pasa a mayúsculas).",
+        examples=["EUR"],
+    )
+    initial_balance: Decimal = Field(
+        default=Decimal("0"),
+        description="Saldo al crear la cuenta, antes de cualquier movimiento.",
+        examples=["1500.00"],
+    )
+    is_primary: bool = Field(
+        default=False,
+        description="Si es la cuenta principal. Al marcarla, las demás dejan de serlo.",
+        examples=[True],
+    )
 
 
 class AccountUpdate(BaseModel):
-    name: str | None = None
-    type: AccountType | None = None
-    currency: str | None = Field(default=None, min_length=3, max_length=3)
-    is_primary: bool | None = None
+    name: str | None = Field(default=None, description="Nuevo nombre.", examples=["Ahorros"])
+    type: AccountType | None = Field(
+        default=None, description=_TYPE_DESCRIPTION, examples=["savings"]
+    )
+    currency: str | None = Field(
+        default=None,
+        min_length=3,
+        max_length=3,
+        description="Nueva moneda (código ISO 4217).",
+        examples=["USD"],
+    )
+    is_primary: bool | None = Field(
+        default=None,
+        description="Marcar o desmarcar como principal. Al marcarla, las demás dejan de serlo.",
+        examples=[True],
+    )
+
+
+class AccountBalance(BaseModel):
+    balance: Decimal = Field(description="Saldo actual de la cuenta, en su moneda.")
 
 
 class AccountRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
-    owner_id: int
-    name: str
-    type: str
-    currency: str
-    initial_balance: Decimal
-    balance: Decimal
-    is_archived: bool
-    is_primary: bool
-    created_at: datetime
-    updated_at: datetime
+    id: int = Field(description="Id de la cuenta.")
+    owner_id: int = Field(description="Id del usuario dueño.")
+    name: str = Field(description="Nombre de la cuenta.")
+    type: str = Field(description=_TYPE_DESCRIPTION)
+    currency: str = Field(description="Moneda de la cuenta (código ISO 4217).")
+    initial_balance: Decimal = Field(description="Saldo al crear la cuenta.")
+    balance: Decimal = Field(
+        description="Saldo actual: saldo inicial más los movimientos no borrados."
+    )
+    is_archived: bool = Field(description="Si la cuenta está archivada.")
+    is_primary: bool = Field(description="Si es la cuenta principal del usuario.")
+    created_at: datetime = Field(description="Fecha de creación.")
+    updated_at: datetime = Field(description="Fecha de la última modificación.")

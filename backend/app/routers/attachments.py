@@ -2,19 +2,28 @@ import io
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, HTTPException, Path, UploadFile, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.core.database import get_db
+from app.core.openapi import AUTH_RESPONSES, Tag, error_responses
 from app.models.attachment import Attachment
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.attachment import AttachmentRead
 from app.services.storage import get_storage_backend
 
-router = APIRouter(tags=["attachments"])
+router = APIRouter(tags=[Tag.ADJUNTOS], responses=AUTH_RESPONSES)
+
+TransactionId = Annotated[int, Path(description="Id del movimiento.", examples=[3233])]
+AttachmentId = Annotated[int, Path(description="Id del adjunto.", examples=[15])]
+_TRANSACTION_NOT_FOUND = (
+    "El movimiento no existe o es de otro usuario.",
+    "Movimiento no encontrado",
+)
+_ATTACHMENT_NOT_FOUND = ("El adjunto no existe o es de otro usuario.", "Adjunto no encontrado")
 
 MAX_ATTACHMENT_SIZE_BYTES = 10 * 1024 * 1024
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp", "application/pdf"}
@@ -46,13 +55,31 @@ def _get_owned_attachment(db: Session, attachment_id: int, current_user: User) -
     "/transactions/{transaction_id}/attachments",
     response_model=AttachmentRead,
     status_code=status.HTTP_201_CREATED,
+    summary="Adjuntar un archivo a un movimiento",
+    responses=error_responses(
+        404,
+        413,
+        415,
+        422,
+        e404=_TRANSACTION_NOT_FOUND,
+        e413=("El archivo supera los 10 MB.", "El archivo supera el límite de 10 MB"),
+        e415=(
+            "El archivo no es JPEG, PNG, WebP ni PDF.",
+            "Solo se admiten imágenes (JPEG/PNG/WebP) o PDF",
+        ),
+        e422=("El archivo está vacío.", "Archivo vacío"),
+    ),
 )
 async def upload_attachment(
-    transaction_id: int,
+    transaction_id: TransactionId,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    file: Annotated[UploadFile, File()],
+    file: Annotated[
+        UploadFile, File(description="Recibo o documento: JPEG, PNG, WebP o PDF de hasta 10 MB.")
+    ],
 ) -> AttachmentRead:
+    """Sube un recibo o documento (`multipart/form-data`) y lo asocia al
+    movimiento. Un movimiento puede tener varios adjuntos."""
     transaction = _get_owned_transaction(db, transaction_id, current_user)
 
     mime_type = file.content_type or "application/octet-stream"
@@ -88,12 +115,19 @@ async def upload_attachment(
     return AttachmentRead.model_validate(attachment)
 
 
-@router.get("/transactions/{transaction_id}/attachments", response_model=list[AttachmentRead])
+@router.get(
+    "/transactions/{transaction_id}/attachments",
+    response_model=list[AttachmentRead],
+    summary="Listar los adjuntos de un movimiento",
+    responses=error_responses(404, e404=_TRANSACTION_NOT_FOUND),
+)
 def list_attachments(
-    transaction_id: int,
+    transaction_id: TransactionId,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[AttachmentRead]:
+    """Adjuntos del movimiento, del más antiguo al más reciente (solo los
+    datos; el archivo se descarga con `GET /attachments/{attachment_id}`)."""
     transaction = _get_owned_transaction(db, transaction_id, current_user)
     attachments = (
         db.query(Attachment)
@@ -104,12 +138,30 @@ def list_attachments(
     return [AttachmentRead.model_validate(a) for a in attachments]
 
 
-@router.get("/attachments/{attachment_id}")
+@router.get(
+    "/attachments/{attachment_id}",
+    response_class=StreamingResponse,
+    summary="Descargar un adjunto",
+    responses={
+        200: {
+            "description": "El archivo, con su tipo de contenido original y "
+            "`Content-Disposition: inline`.",
+            "content": {
+                "image/jpeg": {},
+                "image/png": {},
+                "image/webp": {},
+                "application/pdf": {},
+            },
+        },
+        **error_responses(404, e404=_ATTACHMENT_NOT_FOUND),
+    },
+)
 def download_attachment(
-    attachment_id: int,
+    attachment_id: AttachmentId,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> StreamingResponse:
+    """Devuelve el archivo del adjunto (no JSON)."""
     attachment = _get_owned_attachment(db, attachment_id, current_user)
     file_handle = get_storage_backend().open(attachment.storage_key)
     return StreamingResponse(
@@ -119,12 +171,18 @@ def download_attachment(
     )
 
 
-@router.delete("/attachments/{attachment_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/attachments/{attachment_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Borrar un adjunto",
+    responses=error_responses(404, e404=_ATTACHMENT_NOT_FOUND),
+)
 def delete_attachment(
-    attachment_id: int,
+    attachment_id: AttachmentId,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
+    """Borra el adjunto y su archivo de forma definitiva."""
     attachment = _get_owned_attachment(db, attachment_id, current_user)
     get_storage_backend().delete(attachment.storage_key)
     db.delete(attachment)

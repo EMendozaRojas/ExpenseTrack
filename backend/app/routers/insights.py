@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.auth.dependencies import get_current_user
 from app.core.database import get_db
+from app.core.openapi import AUTH_RESPONSES, Tag
 from app.models.category import Category
 from app.models.dismissed_recurring_series import DismissedRecurringSeries
 from app.models.transaction import Transaction
@@ -22,7 +23,7 @@ from app.schemas.insights import (
 )
 from app.services.recurring_detector import detect_recurring_series
 
-router = APIRouter(prefix="/insights", tags=["insights"])
+router = APIRouter(prefix="/insights", tags=[Tag.ANALISIS], responses=AUTH_RESPONSES)
 
 RECURRING_WINDOW_MONTHS = 6
 
@@ -46,11 +47,18 @@ def _month_range(year: int, month: int) -> tuple[date, date]:
     return range_start, date(next_year, next_month, 1)
 
 
-@router.get("/recurring", response_model=list[RecurringSeriesRead])
+@router.get(
+    "/recurring", response_model=list[RecurringSeriesRead], summary="Detectar gastos recurrentes"
+)
 def list_recurring_series(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> list[RecurringSeriesRead]:
+    """Series de ingresos o gastos que se repiten, detectadas en los últimos
+    ~6 meses (no se guardan: se recalculan en cada llamada). Una serie agrupa
+    movimientos con la misma contraparte o descripción normalizada y el
+    mismo tipo, con al menos 3 ocurrencias, importes a ±25% de la media y una
+    cadencia regular. Incluye las descartadas, marcadas con `dismissed`."""
     window_start = date.today() - timedelta(days=30 * RECURRING_WINDOW_MONTHS)
     transactions = (
         db.query(Transaction)
@@ -91,12 +99,18 @@ def list_recurring_series(
     ]
 
 
-@router.post("/recurring/dismiss", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/recurring/dismiss",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Descartar una serie recurrente",
+)
 def dismiss_recurring_series(
     payload: DismissRequest,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
+    """Marca una serie como descartada (por ejemplo, porque no es un gasto
+    recurrente de verdad). Es idempotente."""
     existing = (
         db.query(DismissedRecurringSeries)
         .filter(
@@ -110,12 +124,17 @@ def dismiss_recurring_series(
         db.commit()
 
 
-@router.post("/recurring/restore", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/recurring/restore",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Recuperar una serie descartada",
+)
 def restore_recurring_series(
     payload: DismissRequest,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> None:
+    """Quita la marca de descartada. Es idempotente."""
     db.query(DismissedRecurringSeries).filter(
         DismissedRecurringSeries.owner_id == current_user.id,
         DismissedRecurringSeries.series_key == payload.series_key,
@@ -123,13 +142,20 @@ def restore_recurring_series(
     db.commit()
 
 
-@router.get("/ant-spending", response_model=list[AntSpendingGroup])
+@router.get(
+    "/ant-spending", response_model=list[AntSpendingGroup], summary="Detectar gasto hormiga"
+)
 def ant_spending(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    year: Annotated[int, Query(ge=2000, le=2100)],
-    month: Annotated[int, Query(ge=1, le=12)],
+    year: Annotated[int, Query(ge=2000, le=2100, description="Año.", examples=[2026])],
+    month: Annotated[int, Query(ge=1, le=12, description="Mes (1–12).", examples=[10])],
 ) -> list[AntSpendingGroup]:
+    """Gastos pequeños y frecuentes del mes, agrupados por subcategoría: solo
+    cuentan los gastos de hasta `ant_max_amount`, y un grupo aparece si
+    tiene al menos `ant_min_occurrences` gastos y suma al menos
+    `ant_min_aggregate` (ver `GET /insights/settings`). De mayor a menor
+    total."""
     preferences = _get_or_create_preferences(db, current_user)
     range_start, range_end = _month_range(year, month)
 
@@ -168,20 +194,26 @@ def ant_spending(
     return groups
 
 
-@router.get("/settings", response_model=InsightSettingsRead)
+@router.get(
+    "/settings", response_model=InsightSettingsRead, summary="Ver los ajustes de gasto hormiga"
+)
 def get_settings(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> InsightSettingsRead:
+    """Umbrales que usa la detección de gasto hormiga."""
     return InsightSettingsRead.model_validate(_get_or_create_preferences(db, current_user))
 
 
-@router.patch("/settings", response_model=InsightSettingsRead)
+@router.patch(
+    "/settings", response_model=InsightSettingsRead, summary="Cambiar los ajustes de gasto hormiga"
+)
 def update_settings(
     payload: InsightSettingsUpdate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> InsightSettingsRead:
+    """Cambia los umbrales enviados; el resto no cambia."""
     preferences = _get_or_create_preferences(db, current_user)
     if payload.ant_max_amount is not None:
         preferences.ant_max_amount = payload.ant_max_amount

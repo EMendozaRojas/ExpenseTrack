@@ -1,11 +1,12 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.core.database import get_db
+from app.core.openapi import AUTH_RESPONSES, Tag, error_responses
 from app.models.category import Category
 from app.models.transaction import Transaction
 from app.models.user import User
@@ -14,7 +15,7 @@ from app.services.budget_operations import freeze_for_category
 from app.services.categorizer import uncategorized_category_id
 from app.services.notifications import notify_budget_category_deleted
 
-router = APIRouter(prefix="/categories", tags=["categories"])
+router = APIRouter(prefix="/categories", tags=[Tag.CATEGORIAS], responses=AUTH_RESPONSES)
 
 
 def _visible_category(db: Session, category_id: int, current_user: User) -> Category | None:
@@ -44,12 +45,18 @@ def _to_read(category: Category, children: list[Category]) -> CategoryRead:
     )
 
 
-@router.get("/", response_model=list[CategoryRead])
+@router.get("/", response_model=list[CategoryRead], summary="Listar categorías")
 def list_categories(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    kind: str | None = None,
+    kind: Annotated[
+        str | None,
+        Query(description="Solo las de este tipo: `expense` o `income`.", examples=["expense"]),
+    ] = None,
 ) -> list[CategoryRead]:
+    """Árbol de categorías visibles para el usuario (las de sistema y las
+    suyas): una lista de categorías raíz, cada una con sus subcategorías en
+    `children`, por nombre."""
     query = db.query(Category).filter(
         or_(Category.owner_id.is_(None), Category.owner_id == current_user.id)
     )
@@ -66,12 +73,34 @@ def list_categories(
     return [_to_read(root, children_by_parent.get(root.id, [])) for root in roots]
 
 
-@router.post("/", response_model=CategoryRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=CategoryRead,
+    status_code=status.HTTP_201_CREATED,
+    summary="Crear categoría",
+    responses=error_responses(
+        404,
+        409,
+        422,
+        e404=("La categoría padre no existe o no es visible.", "Categoría padre no encontrada"),
+        e409=(
+            "El usuario ya tiene una categoría con ese nombre en el mismo nivel.",
+            "Ya existe una categoría con ese nombre",
+        ),
+        e422=(
+            "El padre ya es una subcategoría (solo hay dos niveles).",
+            "Una subcategoría no puede tener hijas",
+        ),
+    ),
+)
 def create_category(
     payload: CategoryCreate,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> CategoryRead:
+    """Crea una categoría propia del usuario: raíz (sin `parent_id`) o
+    subcategoría de una raíz visible, de sistema o propia. Una subcategoría
+    hereda el `kind` de su padre."""
     kind: str = payload.kind
     if payload.parent_id is not None:
         parent = _visible_category(db, payload.parent_id, current_user)
@@ -117,12 +146,30 @@ def create_category(
     return _to_read(category, [])
 
 
-@router.delete("/{category_id}", response_model=CategoryDeleteResult)
+@router.delete(
+    "/{category_id}",
+    response_model=CategoryDeleteResult,
+    summary="Borrar categoría",
+    responses=error_responses(
+        404,
+        e404=(
+            "La categoría no existe, es de sistema o es de otro usuario.",
+            "Categoría no encontrada",
+        ),
+    ),
+)
 def delete_category(
-    category_id: int,
+    category_id: Annotated[int, Path(description="Id de la categoría.", examples=[408])],
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> CategoryDeleteResult:
+    """Borra una categoría propia (las de sistema no se pueden borrar):
+
+    - sus subcategorías suben al nivel de su padre;
+    - sus movimientos pasan a "Sin Clasificar";
+    - si tenía presupuestos, los meses pasados conservan el monto y lo
+      gastado, desde el mes en curso dejan de aplicar y se crea una
+      notificación `budget_category_deleted`."""
     category = (
         db.query(Category)
         .filter(Category.id == category_id, Category.owner_id == current_user.id)

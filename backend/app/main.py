@@ -1,7 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 
 from app.core.config import get_settings
+from app.core.openapi import API_DESCRIPTION, API_TITLE, API_VERSION, OPENAPI_TAGS, Tag
 from app.routers import (
     accounts,
     attachments,
@@ -23,7 +25,13 @@ from app.routers import (
 
 settings = get_settings()
 
-app = FastAPI(title="ExpenseTrack API")
+app = FastAPI(
+    title=API_TITLE,
+    version=API_VERSION,
+    description=API_DESCRIPTION,
+    openapi_tags=OPENAPI_TAGS,
+    swagger_ui_parameters={"persistAuthorization": True},
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -51,6 +59,12 @@ app.include_router(users.router, prefix="/api/v1")
 app.include_router(notifications.router, prefix="/api/v1")
 
 
-@app.get("/health")
-def health() -> dict[str, str]:
-    return {"status": "ok"}
+class HealthStatus(BaseModel):
+    status: str = Field(description="`ok` si el servicio responde.", examples=["ok"])
+
+
+@app.get("/health", tags=[Tag.SISTEMA], summary="Comprobar el estado del servicio")
+def health() -> HealthStatus:
+    """Responde `ok` si la API está en marcha. No requiere autenticación ni
+    comprueba la base de datos."""
+    return HealthStatus(status="ok")

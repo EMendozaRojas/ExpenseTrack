@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, aliased
 
 from app.auth.dependencies import get_current_user
 from app.core.database import get_db
+from app.core.openapi import AUTH_RESPONSES, Tag, error_responses
 from app.models.account import Account
 from app.models.category import Category
 from app.models.transaction import Transaction
@@ -15,7 +16,7 @@ from app.models.user import User
 from app.schemas.dashboard import DashboardCategoryNode, DashboardSummary
 from app.schemas.transaction import CategorySummary
 
-router = APIRouter(prefix="/dashboard", tags=["dashboard"])
+router = APIRouter(prefix="/dashboard", tags=[Tag.DASHBOARD], responses=AUTH_RESPONSES)
 
 # Umbral de "datos incompletos" (regla de negocio confirmada en producto):
 # si el último movimiento del mes en curso es más antiguo que esto, se avisa
@@ -31,14 +32,31 @@ def _month_range(year: int, month: int) -> tuple[date, date]:
     return range_start, range_end
 
 
-@router.get("/summary", response_model=DashboardSummary)
+@router.get(
+    "/summary",
+    response_model=DashboardSummary,
+    summary="Resumen del mes",
+    responses=error_responses(
+        404, e404=("La cuenta no existe o es de otro usuario.", "Cuenta no encontrada")
+    ),
+)
 def monthly_dashboard(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    year: Annotated[int, Query(ge=2000, le=2100)],
-    month: Annotated[int, Query(ge=1, le=12)],
-    account_id: int | None = None,
+    year: Annotated[int, Query(ge=2000, le=2100, description="Año.", examples=[2026])],
+    month: Annotated[int, Query(ge=1, le=12, description="Mes (1–12).", examples=[10])],
+    account_id: Annotated[
+        int | None,
+        Query(description="Solo los movimientos de esta cuenta; sin ella, todas.", examples=[1110]),
+    ] = None,
 ) -> DashboardSummary:
+    """Ingresos, gastos y neto del mes, gastos fijos y variables (según las
+    subcategorías marcadas como fijas) y gasto por categoría en árbol (raíz
+    con sus subcategorías, de mayor a menor gasto). No cuenta transferencias
+    ni movimientos borrados.
+
+    En el mes en curso, `incomplete_data` avisa si el último movimiento es
+    de hace más de 3 días: el resumen puede no estar al día."""
     range_start, range_end = _month_range(year, month)
 
     if account_id is not None:

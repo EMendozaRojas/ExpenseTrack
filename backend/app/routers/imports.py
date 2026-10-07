@@ -1,12 +1,13 @@
 from datetime import datetime, timedelta, timezone
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, UploadFile, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from app.auth.dependencies import get_current_user
 from app.core.database import get_db
+from app.core.openapi import AUTH_RESPONSES, Tag, error_responses
 from app.models.account import Account
 from app.models.categorization_rule import CategorizationRule
 from app.models.import_batch import ImportBatch
@@ -24,7 +25,10 @@ from app.services.notifications import check_budget_notifications
 from app.services.reconciler import external_hash, find_probable_duplicate
 from app.services.statement_parser import StatementParseError, parse_csv
 
-router = APIRouter(prefix="/imports", tags=["imports"])
+router = APIRouter(prefix="/imports", tags=[Tag.IMPORTACION], responses=AUTH_RESPONSES)
+
+BatchId = Annotated[int, Path(description="Id de la importación (lote).", examples=[257])]
+_BATCH_NOT_FOUND = ("La importación no existe o es de otro usuario.", "Importación no encontrada")
 
 MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024
 MAX_ROWS = 10_000
@@ -71,13 +75,51 @@ def _to_preview(batch: ImportBatch, rows: list[ImportRow]) -> ImportPreview:
     )
 
 
-@router.post("/", response_model=ImportPreview, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/",
+    response_model=ImportPreview,
+    status_code=status.HTTP_201_CREATED,
+    summary="Subir un extracto (vista previa)",
+    responses=error_responses(
+        404,
+        413,
+        415,
+        422,
+        e404=("La cuenta no existe o es de otro usuario.", "Cuenta no encontrada"),
+        e413=("El archivo supera 5 MB o 10.000 filas.", "El archivo supera el límite de 5 MB"),
+        e415=(
+            "El archivo no es CSV.",
+            "Por ahora solo se admite CSV; XLSX y PDF llegarán en un cambio posterior",
+        ),
+        e422=(
+            "No se reconocen las columnas, o alguna fecha o importe no es válido.",
+            "El archivo no tiene una cabecera reconocible",
+        ),
+    ),
+)
 async def upload_statement(
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
-    account_id: Annotated[int, Form()],
-    file: Annotated[UploadFile, File()],
+    account_id: Annotated[
+        int, Form(description="Cuenta a la que pertenece el extracto.", examples=[1110])
+    ],
+    file: Annotated[UploadFile, File(description="Extracto en CSV (hasta 5 MB y 10.000 filas).")],
 ) -> ImportPreview:
+    """Analiza un extracto CSV (`multipart/form-data`) y devuelve una vista
+    previa **sin crear movimientos**.
+
+    - Columnas reconocidas (sin distinguir mayúsculas): fecha (`Fecha`,
+      `Date`, `Fecha valor`…), concepto (`Concepto`, `Descripción`,
+      `Detalle`…) e importe (`Importe`, `Amount`…) o bien `Debe`/`Haber`.
+    - Fechas `AAAA-MM-DD`, `DD/MM/AAAA`, `DD-MM-AAAA` o `DD/MM/AA`; importes
+      con coma o punto decimal.
+    - Cada fila se clasifica comparándola con los movimientos de la cuenta:
+      `NEW`, `EXACT_DUPLICATE` (misma fecha, importe y concepto) o
+      `PROBABLE_DUPLICATE` (mismo importe, fecha con ±1 día y concepto
+      parecido).
+
+    Para crear los movimientos, confirma con
+    `POST /imports/{batch_id}/commit`."""
     account = _get_owned_account(db, account_id, current_user)
 
     filename = file.filename or "extracto.csv"
@@ -174,12 +216,18 @@ async def upload_statement(
     return _to_preview(batch, rows)
 
 
-@router.get("/{batch_id}", response_model=ImportPreview)
+@router.get(
+    "/{batch_id}",
+    response_model=ImportPreview,
+    summary="Ver una importación",
+    responses=error_responses(404, e404=_BATCH_NOT_FOUND),
+)
 def get_import(
-    batch_id: int,
+    batch_id: BatchId,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ImportPreview:
+    """Vuelve a mostrar la vista previa de una importación, confirmada o no."""
     batch = _get_owned_batch(db, batch_id, current_user)
     rows = (
         db.query(ImportRow)
@@ -190,13 +238,37 @@ def get_import(
     return _to_preview(batch, rows)
 
 
-@router.post("/{batch_id}/commit", response_model=ImportCommitResult)
+@router.post(
+    "/{batch_id}/commit",
+    response_model=ImportCommitResult,
+    summary="Confirmar una importación",
+    responses=error_responses(
+        404,
+        409,
+        e404=_BATCH_NOT_FOUND,
+        e409=("La importación ya se había confirmado.", "Esta importación ya fue confirmada"),
+    ),
+)
 def commit_import(
-    batch_id: int,
+    batch_id: BatchId,
     payload: ImportCommitRequest,
     db: Annotated[Session, Depends(get_db)],
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> ImportCommitResult:
+    """Crea los movimientos de la importación según la estrategia:
+
+    - `append_new`: inserta las filas `NEW` y las indicadas en `row_ids`;
+      no borra nada.
+    - `replace_range`: manda a la papelera los movimientos importados de la
+      cuenta en el rango de fechas del archivo e inserta **todas** las filas.
+      Los movimientos manuales no se tocan.
+    - `replace_selected`: manda a la papelera los movimientos importados con
+      los que coinciden las filas de `row_ids`, e inserta las filas `NEW` y
+      las de `row_ids`.
+
+    Los movimientos nuevos se categorizan con las reglas (o van a "Sin
+    Clasificar"). Una importación solo se confirma una vez. Al terminar,
+    revisa los avisos de presupuesto del mes en curso."""
     batch = _get_owned_batch(db, batch_id, current_user)
     if batch.status == "committed":
         raise HTTPException(

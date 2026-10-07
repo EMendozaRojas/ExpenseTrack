@@ -108,6 +108,21 @@ docker compose exec backend pytest
 docker compose exec frontend npm test
 ```
 
+## Documentación de la API
+
+La API se documenta en español en http://localhost:8000/docs (Swagger) y
+http://localhost:8000/redoc. El contrato OpenAPI está versionado en
+`backend/openapi.json`. Después de cambiar un endpoint o un esquema, hay que
+regenerarlo (un test falla si no está al día):
+
+```bash
+docker compose exec backend python -m scripts.export_openapi
+```
+
+Cada endpoint nuevo necesita `summary`, docstring, tag (`app/core/openapi.py`)
+y errores documentados, y cada campo de un esquema, `Field(description=...)`
+(con `examples` en los de entrada). Lo comprueba `tests/test_openapi_docs.py`.
+
 ## Decisiones tomadas
 
 - Web app con frontend y backend separados (no SPA sin backend, no server-rendered).
