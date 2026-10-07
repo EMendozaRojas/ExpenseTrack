@@ -34,4 +34,4 @@ Del borrador original, no implementado:
 
 ## Hallazgo al revisar (2026-10-07)
 
-- El saldo de una cuenta (`GET /accounts`, `/accounts/{id}/balance`) suma el importe original de cada movimiento, no `amount_in_account_currency`: un gasto en USD sobre una cuenta en EUR descuenta el importe en dólares. Lo mismo ocurre en presupuestos y dashboard (ya documentado como limitación de moneda). Pendiente de decidir si se corrige.
+- El saldo de una cuenta suma el importe original de cada movimiento, no `amount_in_account_currency`: un gasto en USD sobre una cuenta en EUR descontaría el importe en dólares. No afecta en la práctica: la app no ofrece registrar movimientos en otra moneda y no hay datos así. Aclarado con el usuario: la multimoneda deseada son cuentas independientes por moneda, sin conversión. El cambio está planteado en la ficha `independent-currency-accounts` (mejora futura, fuera del MVP).
