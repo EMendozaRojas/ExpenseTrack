@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { act, render, screen } from "@testing-library/react";
+import { useSyncExternalStore } from "react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -57,6 +58,50 @@ describe("OnboardingPage", () => {
 
     expect(profileApi.updateProfile).toHaveBeenCalledWith("test-token", "Ana López");
     expect(profileApi.uploadAvatar).not.toHaveBeenCalled();
+    expect(await screen.findByText("Página principal")).toBeInTheDocument();
+  });
+
+  it("tras guardar, cuando el usuario ya tiene nombre, redirige sin romperse", async () => {
+    const user = userEvent.setup();
+    vi.mocked(profileApi.updateProfile).mockResolvedValue({
+      id: 1,
+      email: "demo@example.com",
+      full_name: "Ana López",
+      has_avatar: false,
+      created_at: "2026-01-01T00:00:00Z",
+    });
+    // Como en la app real: el usuario vive en un estado compartido y
+    // refrescarlo vuelve a renderizar la página, ya con nombre.
+    let auth = {
+      token: "test-token",
+      user: {
+        id: 1,
+        email: "demo@example.com",
+        full_name: null as string | null,
+        has_avatar: false,
+      },
+      refreshUser: refreshUserMock,
+    };
+    const listeners = new Set<() => void>();
+    useAuthMock.mockImplementation(() =>
+      useSyncExternalStore(
+        (listener) => {
+          listeners.add(listener);
+          return () => listeners.delete(listener);
+        },
+        () => auth,
+      ),
+    );
+    refreshUserMock.mockImplementation(async () => {
+      auth = { ...auth, user: { ...auth.user, full_name: "Ana López" } };
+      act(() => listeners.forEach((listener) => listener()));
+    });
+
+    renderOnboardingPage();
+
+    await user.type(screen.getByLabelText("Nombre"), "Ana López");
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
     expect(await screen.findByText("Página principal")).toBeInTheDocument();
   });
 

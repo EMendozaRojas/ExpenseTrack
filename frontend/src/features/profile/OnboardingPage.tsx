@@ -12,10 +12,6 @@ export function OnboardingPage() {
   const [fullName, setFullName] = useState("");
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
-  if (user?.full_name) {
-    return <Navigate to="/" replace />;
-  }
-
   const mutation = useMutation({
     mutationFn: async () => {
       await updateProfile(token as string, fullName);
@@ -26,6 +22,12 @@ export function OnboardingPage() {
     },
     onSuccess: () => navigate("/", { replace: true }),
   });
+
+  // Después de todos los hooks: tras guardar, `refreshUser()` vuelve a
+  // renderizar la página con el nombre ya puesto y entra por aquí.
+  if (user?.full_name) {
+    return <Navigate to="/" replace />;
+  }
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
