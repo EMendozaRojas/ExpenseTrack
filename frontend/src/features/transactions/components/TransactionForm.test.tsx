@@ -156,4 +156,34 @@ describe("TransactionForm", () => {
       expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ category_id: 99 })),
     );
   });
+
+  it("con una sola cuenta no muestra el campo Cuenta", () => {
+    render(
+      <TransactionForm
+        accounts={accounts}
+        categories={categories}
+        defaultDate="2026-08-13"
+        onSubmit={vi.fn()}
+        onCreateCategory={vi.fn()}
+        isSubmitting={false}
+      />,
+    );
+
+    expect(screen.queryByLabelText("Cuenta")).not.toBeInTheDocument();
+  });
+
+  it("con varias cuentas muestra el campo Cuenta con la primera elegida", () => {
+    render(
+      <TransactionForm
+        accounts={[...accounts, { ...accounts[0], id: 2, name: "Ahorros", is_primary: false }]}
+        categories={categories}
+        defaultDate="2026-08-13"
+        onSubmit={vi.fn()}
+        onCreateCategory={vi.fn()}
+        isSubmitting={false}
+      />,
+    );
+
+    expect(screen.getByLabelText("Cuenta")).toHaveValue("1");
+  });
 });

@@ -101,18 +101,23 @@ export function TransactionForm({
   return (
     <form className="expense-form" onSubmit={handleSubmit}>
       <div className="expense-form-grid">
-        <label htmlFor="transaction-account">Cuenta</label>
-        <select
-          id="transaction-account"
-          value={accountId}
-          onChange={(event) => setAccountId(event.target.value)}
-        >
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.name}
-            </option>
-          ))}
-        </select>
+        {/* Con una sola cuenta no se pregunta: se usa esa (la elige el efecto de arriba). */}
+        {accounts.length > 1 && (
+          <>
+            <label htmlFor="transaction-account">Cuenta</label>
+            <select
+              id="transaction-account"
+              value={accountId}
+              onChange={(event) => setAccountId(event.target.value)}
+            >
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         <span id="transaction-direction-label">Tipo</span>
         <div role="radiogroup" aria-labelledby="transaction-direction-label">

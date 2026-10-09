@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useAuth } from "../auth/useAuth";
 import { listAccounts } from "../transactions/api";
@@ -78,6 +78,16 @@ export function ImportsPage({ onCommitted }: ImportsPageProps = {}) {
   }
 
   const accounts = accountsQuery.data ?? [];
+  // Con una sola cuenta no se pregunta: se importa en esa. Solo con varias
+  // aparece el campo «Cuenta».
+  const askForAccount = accounts.length > 1;
+  const onlyAccountId = accounts.length === 1 ? accounts[0].id : null;
+
+  useEffect(() => {
+    if (onlyAccountId !== null && accountId === null) {
+      setAccountId(onlyAccountId);
+    }
+  }, [onlyAccountId, accountId]);
 
   return (
     <div className="imports-page">
@@ -86,19 +96,25 @@ export function ImportsPage({ onCommitted }: ImportsPageProps = {}) {
       </p>
 
       <div className="import-upload-form">
-        <label htmlFor="import-account">Cuenta</label>
-        <select
-          id="import-account"
-          value={accountId ?? ""}
-          onChange={(event) => setAccountId(event.target.value ? Number(event.target.value) : null)}
-        >
-          <option value="">Selecciona una cuenta</option>
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.name}
-            </option>
-          ))}
-        </select>
+        {askForAccount && (
+          <>
+            <label htmlFor="import-account">Cuenta</label>
+            <select
+              id="import-account"
+              value={accountId ?? ""}
+              onChange={(event) =>
+                setAccountId(event.target.value ? Number(event.target.value) : null)
+              }
+            >
+              <option value="">Selecciona una cuenta</option>
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         <label htmlFor="import-file">Archivo CSV</label>
         <input

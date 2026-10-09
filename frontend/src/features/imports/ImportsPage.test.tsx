@@ -82,8 +82,7 @@ describe("ImportsPage", () => {
 
     renderPage();
 
-    await waitFor(() => expect(screen.getByText("Cuenta Principal")).toBeInTheDocument());
-    await user.selectOptions(screen.getByLabelText("Cuenta"), "5");
+    await waitFor(() => expect(transactionsApi.listAccounts).toHaveBeenCalled());
 
     const file = new File(["a,b\n1,2"], "extracto.csv", { type: "text/csv" });
     await user.upload(screen.getByLabelText("Archivo CSV"), file);
@@ -131,8 +130,7 @@ describe("ImportsPage", () => {
     });
 
     renderPage();
-    await waitFor(() => expect(screen.getByText("Cuenta Principal")).toBeInTheDocument());
-    await user.selectOptions(screen.getByLabelText("Cuenta"), "5");
+    await waitFor(() => expect(transactionsApi.listAccounts).toHaveBeenCalled());
     const file = new File(["a,b\n1,2"], "extracto.csv", { type: "text/csv" });
     await user.upload(screen.getByLabelText("Archivo CSV"), file);
     await user.click(screen.getByRole("button", { name: "Previsualizar" }));
@@ -142,5 +140,48 @@ describe("ImportsPage", () => {
 
     expect(importsApi.commitImport).toHaveBeenCalledWith("test-token", 42, "append_new", []);
     expect(await screen.findByText(/1 insertados/)).toBeInTheDocument();
+  });
+
+  it("con una sola cuenta no pide elegirla y se puede subir directamente", async () => {
+    const user = userEvent.setup();
+    vi.mocked(importsApi.uploadStatement).mockResolvedValue({
+      id: 7,
+      account_id: 5,
+      filename: "extracto.csv",
+      status: "previewed",
+      range_start: "2026-03-01",
+      range_end: "2026-03-01",
+      created_at: "2026-03-04T00:00:00Z",
+      new_count: 0,
+      exact_duplicate_count: 0,
+      probable_duplicate_count: 0,
+      rows: [],
+    });
+
+    renderPage();
+    await waitFor(() => expect(transactionsApi.listAccounts).toHaveBeenCalled());
+
+    expect(screen.queryByLabelText("Cuenta")).not.toBeInTheDocument();
+    const file = new File(["a,b\n1,2"], "extracto.csv", { type: "text/csv" });
+    await user.upload(screen.getByLabelText("Archivo CSV"), file);
+    const previewButton = screen.getByRole("button", { name: "Previsualizar" });
+    await waitFor(() => expect(previewButton).toBeEnabled());
+    await user.click(previewButton);
+
+    await waitFor(() =>
+      expect(importsApi.uploadStatement).toHaveBeenCalledWith("test-token", 5, file),
+    );
+  });
+
+  it("con varias cuentas pide elegir una", async () => {
+    vi.mocked(transactionsApi.listAccounts).mockResolvedValue([
+      ...accounts,
+      { ...accounts[0], id: 6, name: "Ahorros", is_primary: false },
+    ]);
+
+    renderPage();
+
+    expect(await screen.findByLabelText("Cuenta")).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "Selecciona una cuenta" })).toBeInTheDocument();
   });
 });
