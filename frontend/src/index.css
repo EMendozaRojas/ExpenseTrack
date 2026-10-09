@@ -944,6 +944,12 @@ label {
   color: var(--text-secondary);
 }
 
+/* Solo en el móvil: separador « de » y porcentaje junto al importe. */
+.budget-card-sep-mobile,
+.budget-card-pct {
+  display: none;
+}
+
 .budget-card-track {
   height: 10px;
   background: var(--series-1-track);
@@ -1746,6 +1752,82 @@ label {
 
   .app-topbar .button-secondary {
     white-space: nowrap;
+    padding-inline: 0.75rem;
+  }
+
+  .app-topbar .brand-mark-topbar .brand-mark-name {
+    font-size: clamp(1rem, 4.6vw, 1.1rem);
+  }
+
+  /* Tarjeta de presupuesto: un dato por línea (nombre, etiqueta, importes y
+     porcentaje, barra, estado, ritmo, botones). */
+  .budget-card-header {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .budget-card-name {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .budget-card-badge {
+    margin-left: 0;
+  }
+
+  .budget-card-figures {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .budget-card-spent {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .budget-card-sep-desktop,
+  .budget-card-status-pct {
+    display: none;
+  }
+
+  .budget-card-sep-mobile {
+    display: inline;
+  }
+
+  .budget-card-pct {
+    display: inline;
+    font-weight: 700;
+  }
+
+  .budget-card-footer {
+    display: contents;
+  }
+
+  .budget-card-status {
+    order: 3;
+    font-size: 0.9rem;
+  }
+
+  .budget-card-pace {
+    order: 4;
+    margin: 0;
+  }
+
+  .budget-card-actions {
+    order: 5;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-top: 0.25rem;
+  }
+
+  .budget-card-actions button {
+    min-height: 44px;
   }
 
   .app-main {
