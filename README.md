@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="frontend/public/logo.png" alt="ExpenseTrack" width="160">
+  <img src="frontend/public/mascota.png" alt="Mascota de ExpenseTrack: una cartera azul sonriente" width="220">
 </p>
 
 <h1 align="center">ExpenseTrack</h1>
@@ -41,9 +41,15 @@ ayuda de un asistente de IA, con tests y documentación.
 |---|---|
 | ![Movimientos del mes con el total por categoría](docs/screenshots/movimientos.jpg) | ![Presupuestos mensuales con estado y ritmo de gasto](docs/screenshots/presupuestos.jpg) |
 
-| Metas de ahorro |
-|---|
-| ![Metas de ahorro con su progreso](docs/screenshots/metas.jpg) |
+| Metas de ahorro | Inicio de sesión |
+|---|---|
+| ![Metas de ahorro con su progreso](docs/screenshots/metas.jpg) | ![Inicio de sesión con la mascota](docs/screenshots/login.jpg) |
+
+**Vista móvil**: barra de navegación abajo y panel «Más» con el resto de secciones.
+
+<p align="center">
+  <img src="docs/screenshots/movil.jpg" alt="Vista móvil: presupuestos con la barra inferior y el panel «Más» abierto" width="640">
+</p>
 
 ## Funcionalidades
 
@@ -56,6 +62,7 @@ ayuda de un asistente de IA, con tests y documentación.
 - **Dashboard mensual**: entradas, salidas, saldo neto, gasto fijo y variable y gasto por categoría, para todas las cuentas o una sola.
 - **Análisis**: detección de pagos recurrentes y de "gasto hormiga" con umbrales configurables.
 - **Autenticación** con email y contraseña o con Google, tokens de acceso de corta duración y refresh tokens rotativos.
+- **Diseño adaptado al móvil**: en pantallas pequeñas, el menú lateral se convierte en una barra de navegación abajo, al alcance del pulgar.
 - **API documentada en español** en `/docs` y `/redoc`, con su contrato versionado en [`backend/openapi.json`](backend/openapi.json).
 
 ## Tecnologías
