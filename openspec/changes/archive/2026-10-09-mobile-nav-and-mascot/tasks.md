@@ -24,4 +24,4 @@
 ## 5. Verificación
 
 - [x] 5.1 `tsc`, `eslint` y `vitest` en verde; Prettier sin avisos en los archivos tocados
-- [ ] 5.2 Revisión visual en el ordenador (navegador) y en vista móvil por la autora
+- [x] 5.2 Revisión visual en el ordenador (navegador) y en vista móvil por la autora
