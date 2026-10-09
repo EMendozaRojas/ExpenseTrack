@@ -4,16 +4,9 @@ import { useAuth } from "../features/auth/useAuth";
 import { useNotificationsCheck } from "../features/notifications/useNotificationsCheck";
 import { useUnreadCount } from "../features/notifications/useUnreadCount";
 import { useAvatarUrl } from "../features/profile/useAvatarUrl";
-
-const NAV_ITEMS = [
-  { to: "/", end: true, icon: "📊", label: "Estadísticas" },
-  { to: "/transactions", icon: "💸", label: "Movimientos" },
-  { to: "/budgets", icon: "🎯", label: "Presupuestos" },
-  { to: "/goals", icon: "🏁", label: "Metas" },
-  { to: "/insights", icon: "💡", label: "Análisis" },
-  { to: "/notifications", icon: "🔔", label: "Notificaciones" },
-  { to: "/settings", icon: "⚙️", label: "Configuración" },
-];
+import { BrandMark } from "./BrandMark";
+import { MobileNav } from "./MobileNav";
+import { NAV_ITEMS, NOTIFICATIONS_PATH } from "./navItems";
 
 function navLinkClassName({ isActive }: { isActive: boolean }): string {
   return isActive ? "app-nav-active" : "";
@@ -61,7 +54,7 @@ export function AppLayout() {
                 {item.icon}
               </span>
               {item.label}
-              {item.to === "/notifications" && unreadCount > 0 && (
+              {item.to === NOTIFICATIONS_PATH && unreadCount > 0 && (
                 <span className="app-nav-badge">{unreadCount}</span>
               )}
             </NavLink>
@@ -69,16 +62,16 @@ export function AppLayout() {
         </nav>
 
         <div className="app-sidebar-footer">
-          <img className="app-sidebar-logo" src="/logo.png" alt="ExpenseTrack — Tus gastos, siempre contigo" />
+          <BrandMark variant="sidebar" />
         </div>
       </aside>
 
       <div className="app-content">
         <header className="app-topbar">
-          <NavLink to="/notifications" className="app-topbar-bell" aria-label="Notificaciones">
-            <span aria-hidden="true">🔔</span>
-            {unreadCount > 0 && <span className="app-nav-badge">{unreadCount}</span>}
-          </NavLink>
+          {/* En el móvil la marca va aquí; en el ordenador ya está en el menú lateral. */}
+          <div className="app-topbar-brand">
+            <BrandMark variant="topbar" />
+          </div>
           {user && (
             <button type="button" className="button-secondary" onClick={handleLogout}>
               Cerrar sesión
@@ -89,6 +82,8 @@ export function AppLayout() {
           <Outlet />
         </main>
       </div>
+
+      <MobileNav unreadCount={unreadCount} />
     </div>
   );
 }

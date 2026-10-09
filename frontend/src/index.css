@@ -168,6 +168,11 @@ label {
   padding: 1rem;
 }
 
+.auth-page-with-brand {
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .auth-form {
   display: flex;
   flex-direction: column;
@@ -291,21 +296,93 @@ label {
   border-top: 1px solid var(--border);
 }
 
-.app-sidebar-logo {
-  width: 100%;
-  max-width: 130px;
-  height: auto;
-  display: block;
-  animation: app-sidebar-logo-bounce 2.2s ease-in-out infinite;
+/* Marca: mascota + nombre (BrandMark) */
+
+.brand-mark {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
 }
 
-@keyframes app-sidebar-logo-bounce {
+.brand-mark-mascot {
+  display: block;
+  height: auto;
+  animation: mascot-bounce 2.2s ease-in-out infinite;
+}
+
+.brand-mark-name {
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+}
+
+.brand-mark-accent {
+  color: #38bdf8; /* sky-400, el azul de "Track" en el logo */
+}
+
+.brand-mark-sidebar .brand-mark-mascot {
+  width: 100%;
+  max-width: 150px;
+}
+
+.brand-mark-sidebar .brand-mark-name {
+  font-size: 1rem;
+}
+
+.brand-mark-topbar {
+  flex-direction: row;
+  gap: 0.5rem;
+}
+
+.brand-mark-topbar .brand-mark-mascot {
+  height: 44px;
+  width: auto;
+  animation-name: mascot-bounce-small;
+}
+
+.brand-mark-topbar .brand-mark-name {
+  font-size: 1.1rem;
+}
+
+.brand-mark-hero .brand-mark-mascot {
+  width: 260px;
+  max-width: 70vw;
+}
+
+.brand-mark-hero .brand-mark-name {
+  font-size: 2rem;
+}
+
+.brand-mark-slogan {
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+}
+
+@keyframes mascot-bounce {
   0%,
   100% {
     transform: translateY(0) rotate(0deg);
   }
   50% {
     transform: translateY(-10px) rotate(-2deg);
+  }
+}
+
+@keyframes mascot-bounce-small {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(-3deg);
+  }
+}
+
+/* Accesibilidad: sin animación si el sistema pide reducir el movimiento */
+@media (prefers-reduced-motion: reduce) {
+  .brand-mark-mascot {
+    animation: none;
   }
 }
 
@@ -329,28 +406,10 @@ label {
   border-bottom: 1px solid var(--border);
 }
 
-.app-topbar-bell {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  background: var(--surface-2);
-  font-size: 1.1rem;
-  text-decoration: none;
-}
-
-.app-topbar-bell:hover {
-  background: var(--surface-raised);
-}
-
-.app-topbar-bell .app-nav-badge {
-  position: absolute;
-  top: -2px;
-  right: -4px;
-  margin-left: 0;
+/* La marca en la barra superior solo se ve en el móvil (en el ordenador
+   está en el menú lateral). */
+.app-topbar-brand {
+  display: none;
 }
 
 .app-main {
@@ -1445,6 +1504,130 @@ label {
   font-size: 0.8rem;
 }
 
+/* Navegación del móvil: barra inferior + panel «Más» (MobileNav) */
+
+:root {
+  --mobile-nav-height: 64px;
+}
+
+.mobile-nav {
+  display: none;
+}
+
+.mobile-nav-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  min-height: var(--mobile-nav-height);
+  padding: 0.25rem 0.25rem env(safe-area-inset-bottom);
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+}
+
+.mobile-nav-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.2rem;
+  min-height: 44px;
+  padding: 0.35rem 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  /* Se adapta al ancho: «Presupuestos» cabe también en móviles de 360 px. */
+  font-size: clamp(0.6rem, 2.8vw, 0.72rem);
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.mobile-nav-item .app-nav-icon {
+  font-size: 1.3rem;
+}
+
+/* Los tres puntos de «Más» son texto, no emoji: más grandes para que se vean
+   como los iconos de al lado, ocupando la misma altura. */
+.mobile-nav-more-icon {
+  font-size: 1.8rem;
+  font-weight: 900;
+  line-height: 1.3rem;
+  height: 1.3rem;
+  color: var(--text-primary);
+}
+
+.mobile-nav-item.mobile-nav-active {
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.mobile-nav-badge {
+  position: absolute;
+  top: 0.15rem;
+  right: 18%;
+  margin-left: 0;
+}
+
+.mobile-nav-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 38;
+  border: 0;
+  background: rgba(2, 6, 23, 0.6);
+  cursor: pointer;
+}
+
+.mobile-nav-sheet {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--mobile-nav-height) + env(safe-area-inset-bottom));
+  z-index: 39;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.6rem 0.75rem 0.75rem;
+  background: var(--surface-1);
+  border-top: 1px solid var(--border);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+}
+
+.mobile-nav-sheet-handle {
+  align-self: center;
+  width: 40px;
+  height: 4px;
+  margin-bottom: 0.4rem;
+  border-radius: 999px;
+  background: var(--surface-raised);
+}
+
+.mobile-nav-sheet-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 48px;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 1rem;
+}
+
+.mobile-nav-sheet-item.mobile-nav-active {
+  background: var(--accent-neutral-track);
+  font-weight: 600;
+}
+
+.mobile-nav-sheet-label {
+  flex: 1;
+}
+
 /* Sidebar notification badge */
 
 .app-nav-badge {
@@ -1542,54 +1725,34 @@ label {
     flex-direction: column;
   }
 
+  /* En el móvil el menú lateral se sustituye por la barra inferior. */
   .app-sidebar {
-    position: sticky;
-    top: 0;
-    width: 100%;
-    height: auto;
-    flex-direction: row;
-    align-items: center;
-    padding: 0.5rem 0.75rem;
-    gap: 0.5rem;
-    overflow-x: auto;
-    overflow-y: hidden;
-    z-index: 10;
-  }
-
-  .app-sidebar-profile,
-  .app-sidebar-footer {
     display: none;
   }
 
-  .app-nav {
-    flex-direction: row;
-    flex: none;
-    gap: 0.15rem;
-  }
-
-  .app-nav a {
-    flex-direction: column;
-    gap: 0.1rem;
-    padding: 0.4rem 0.5rem;
-    font-size: 0.65rem;
-    white-space: nowrap;
-  }
-
-  .app-nav-icon {
-    font-size: 1.1rem;
-  }
-
-  .app-nav-badge {
-    margin-left: 0;
+  .mobile-nav {
+    display: block;
   }
 
   .app-topbar {
-    padding: 0.6rem 1rem;
+    justify-content: space-between;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+  }
+
+  .app-topbar-brand {
+    display: flex;
+  }
+
+  .app-topbar .button-secondary {
+    white-space: nowrap;
   }
 
   .app-main {
     max-width: 100%;
     padding: 1rem;
+    /* Que la barra inferior fija no tape el final de la página. */
+    padding-bottom: calc(var(--mobile-nav-height) + 1rem + env(safe-area-inset-bottom));
   }
 
   .dashboard-stats {

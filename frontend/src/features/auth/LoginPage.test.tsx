@@ -32,6 +32,14 @@ describe("LoginPage", () => {
     vi.resetAllMocks();
   });
 
+  it("muestra la mascota, el nombre y el lema encima del formulario", () => {
+    const { container } = renderLoginPage();
+
+    expect(container.querySelector(".brand-mark-hero img")).toHaveAttribute("src", "/mascota.png");
+    expect(screen.getByText("Tus gastos, siempre contigo")).toBeInTheDocument();
+    expect(screen.getByText("Track")).toBeInTheDocument();
+  });
+
   it("navega a la página principal tras iniciar sesión correctamente", async () => {
     const user = userEvent.setup();
     vi.mocked(api.login).mockResolvedValue({ access_token: "abc123", token_type: "bearer" });

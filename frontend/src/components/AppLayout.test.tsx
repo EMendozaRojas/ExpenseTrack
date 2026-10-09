@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -85,7 +85,7 @@ describe("AppLayout", () => {
     expect(await screen.findByText("Onboarding")).toBeInTheDocument();
   });
 
-  it("muestra el contador de notificaciones no leídas en el menú y en la campana superior", async () => {
+  it("muestra el contador de no leídas en el menú lateral y no hay campanita arriba", async () => {
     useAuthMock.mockReturnValue({
       user: { id: 1, email: "demo@example.com", full_name: "Demo User", has_avatar: false },
       token: "test-token",
@@ -93,9 +93,28 @@ describe("AppLayout", () => {
     });
     vi.mocked(notificationsApi.getUnreadCount).mockResolvedValue({ count: 3 });
 
-    renderAppLayout();
+    const { container } = renderAppLayout();
 
-    expect((await screen.findAllByText("3")).length).toBe(2);
+    const sidebar = container.querySelector(".app-sidebar") as HTMLElement;
+    const notificationsLink = await within(sidebar).findByRole("link", { name: /Notificaciones/ });
+    expect(await within(notificationsLink).findByText("3")).toBeInTheDocument();
+
+    const topbar = container.querySelector(".app-topbar") as HTMLElement;
+    expect(within(topbar).queryByRole("link", { name: /Notificaciones/ })).not.toBeInTheDocument();
+  });
+
+  it("muestra la mascota con el nombre en el menú lateral y en la barra superior", () => {
+    useAuthMock.mockReturnValue({
+      user: { id: 1, email: "demo@example.com", full_name: "Demo User", has_avatar: false },
+      token: "test-token",
+      logout: logoutMock,
+    });
+
+    const { container } = renderAppLayout();
+
+    expect(container.querySelector(".app-sidebar .brand-mark-sidebar")).not.toBeNull();
+    expect(container.querySelector(".app-topbar .brand-mark-topbar")).not.toBeNull();
+    expect(container.querySelector('.brand-mark img[src="/mascota.png"]')).not.toBeNull();
   });
 
   it("muestra el botón de cerrar sesión en la barra superior, no en el menú", async () => {

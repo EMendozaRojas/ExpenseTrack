@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { API_BASE_URL, ApiError } from "../../api/client";
+import { BrandMark } from "../../components/BrandMark";
 import { googleLoginUrl } from "./api";
 import { useAuth } from "./useAuth";
 
@@ -23,7 +24,8 @@ export function LoginPage() {
   }
 
   return (
-    <div className="auth-page">
+    <div className="auth-page auth-page-with-brand">
+      <BrandMark variant="hero" />
       <form className="auth-form" onSubmit={handleSubmit}>
         <h1>Iniciar sesión</h1>
 
