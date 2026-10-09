@@ -15,4 +15,4 @@
 ## 4. Verificación
 
 - [x] 4.1 `tsc`, `eslint` y `vitest` en verde; Prettier sin avisos en los archivos tocados
-- [ ] 4.2 Revisión en el navegador con el usuario demo: dashboard sin selector, formularios sin «Cuenta»; revisión de la autora
+- [x] 4.2 Revisión en el navegador con el usuario demo: dashboard sin selector, formularios sin «Cuenta»; revisión de la autora
