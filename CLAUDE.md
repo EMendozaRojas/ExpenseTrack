@@ -1,5 +1,10 @@
 # ExpenseTrack
 
+> **Antes de nada, lee `SOBRE_MI.md`** (archivo local, no se sube al
+> repositorio; si no existe, aplica igualmente este resumen): la autora no viene
+> del área de IT, aprende de forma autodidacta y quiere que Claude actúe como
+> su profesor (explicaciones claras en español, sin jerga, paso a paso).
+
 ## ¿Qué hace este proyecto?
 
 Aplicación web personal para gestionar finanzas: cuentas, movimientos,
