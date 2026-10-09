@@ -10,4 +10,4 @@
 ## 3. Verificación
 
 - [x] 3.1 `tsc`, `eslint` y `vitest` en verde; Prettier sin avisos en los archivos tocados
-- [ ] 3.2 Revisión en el navegador a 390 y 360 px (sin desbordes) y en el ordenador (sin cambios); revisión de la autora
+- [x] 3.2 Revisión en el navegador a 390 y 360 px (sin desbordes) y en el ordenador (sin cambios); revisión de la autora
