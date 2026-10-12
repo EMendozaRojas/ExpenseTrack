@@ -13,9 +13,12 @@ export function SocialCallbackPage() {
     if (handled.current) return;
     handled.current = true;
 
-    const params = new URLSearchParams(window.location.search);
+    // El backend pasa los tokens en el fragmento (#…); se borran de la barra
+    // de direcciones y del historial en cuanto se leen.
+    const params = new URLSearchParams(window.location.hash.slice(1));
     const accessToken = params.get("access_token");
     const refreshToken = params.get("refresh_token");
+    window.history.replaceState(null, "", window.location.pathname);
 
     if (!accessToken) {
       setError("No se recibió un token de acceso válido.");

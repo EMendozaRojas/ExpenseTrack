@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
+import { setSessionRefresher } from "../../api/client";
 import { updatePreferences } from "../preferences/api";
-import { fetchCurrentUser, login as apiLogin, logoutRequest, register as apiRegister } from "./api";
+import {
+  fetchCurrentUser,
+  login as apiLogin,
+  logoutRequest,
+  refreshRequest,
+  register as apiRegister,
+} from "./api";
 import { AuthContext, type AuthContextValue } from "./context";
 import type { Credentials, User } from "./types";
 
@@ -12,6 +19,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(() => localStorage.getItem(TOKEN_STORAGE_KEY));
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(() => token !== null);
+
+  // Se registra en el primer render (no en un efecto) para que esté lista
+  // antes de las primeras peticiones de las pantallas hijas, cuyos efectos
+  // se ejecutan antes que los de este proveedor.
+  useState(() => {
+    setSessionRefresher(async () => {
+      const refreshToken = localStorage.getItem(REFRESH_TOKEN_STORAGE_KEY);
+      try {
+        if (!refreshToken) throw new Error("Sin refresh token");
+        const tokens = await refreshRequest(refreshToken);
+        localStorage.setItem(TOKEN_STORAGE_KEY, tokens.access_token);
+        if (tokens.refresh_token) {
+          localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, tokens.refresh_token);
+        }
+        setToken(tokens.access_token);
+        return tokens.access_token;
+      } catch {
+        // La sesión caducó del todo: se cierra en local y la app vuelve al login.
+        localStorage.removeItem(TOKEN_STORAGE_KEY);
+        localStorage.removeItem(REFRESH_TOKEN_STORAGE_KEY);
+        setToken(null);
+        setUser(null);
+        return null;
+      }
+    });
+  });
 
   useEffect(() => {
     if (!token) {
@@ -42,13 +75,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [token]);
 
-  const storeTokens = useCallback((accessToken: string, refreshToken: string | null | undefined) => {
-    localStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
-    if (refreshToken) {
-      localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
-    }
-    setToken(accessToken);
-  }, []);
+  const storeTokens = useCallback(
+    (accessToken: string, refreshToken: string | null | undefined) => {
+      localStorage.setItem(TOKEN_STORAGE_KEY, accessToken);
+      if (refreshToken) {
+        localStorage.setItem(REFRESH_TOKEN_STORAGE_KEY, refreshToken);
+      }
+      setToken(accessToken);
+    },
+    [],
+  );
 
   const handleLogin = useCallback(
     async (credentials: Credentials) => {

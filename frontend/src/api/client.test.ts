@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { apiFetch, ApiError } from "./client";
+import { apiFetch, ApiError, authorizedFetch, setSessionRefresher } from "./client";
 
 describe("apiFetch", () => {
   afterEach(() => {
@@ -81,5 +81,74 @@ describe("apiFetch", () => {
       status: 500,
       message: "La petición falló con estado 500",
     });
+  });
+});
+
+describe("renovación de la sesión", () => {
+  const ok = { ok: true, status: 200, json: async () => ({ id: 1 }) };
+  const unauthorized = { ok: false, status: 401, json: async () => ({ detail: "Token caducado" }) };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    setSessionRefresher(null);
+  });
+
+  it("tras un 401 renueva el token y repite la petición una vez", async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok);
+    vi.stubGlobal("fetch", fetchMock);
+    const refresher = vi.fn().mockResolvedValue("token-nuevo");
+    setSessionRefresher(refresher);
+
+    const result = await apiFetch<{ id: number }>("/accounts/", "token-caducado");
+
+    expect(result).toEqual({ id: 1 });
+    expect(refresher).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1][1].headers.Authorization).toBe("Bearer token-nuevo");
+  });
+
+  it("si la renovación falla, devuelve el 401 original", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(unauthorized));
+    setSessionRefresher(vi.fn().mockResolvedValue(null));
+
+    await expect(apiFetch("/accounts/", "token-caducado")).rejects.toMatchObject({ status: 401 });
+  });
+
+  it("varias peticiones con 401 a la vez comparten una sola renovación", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn((_url: string, init: RequestInit) =>
+        Promise.resolve(
+          (init.headers as Record<string, string>).Authorization === "Bearer token-nuevo"
+            ? ok
+            : unauthorized,
+        ),
+      ),
+    );
+    let finishRefresh: (token: string) => void = () => {};
+    const refresher = vi.fn(
+      () =>
+        new Promise<string>((resolve) => {
+          finishRefresh = resolve;
+        }),
+    );
+    setSessionRefresher(refresher);
+
+    const requests = [1, 2, 3].map(() => authorizedFetch("/x", "token-caducado"));
+    await vi.waitFor(() => expect(refresher).toHaveBeenCalled());
+    finishRefresh("token-nuevo");
+    const responses = await Promise.all(requests);
+
+    expect(refresher).toHaveBeenCalledTimes(1);
+    expect(responses.map((response) => response.status)).toEqual([200, 200, 200]);
+  });
+
+  it("sin token no intenta renovar (login, registro)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(unauthorized));
+    const refresher = vi.fn();
+    setSessionRefresher(refresher);
+
+    await expect(apiFetch("/auth/login", null)).rejects.toMatchObject({ status: 401 });
+    expect(refresher).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,4 @@
-import { API_BASE_URL, ApiError, apiFetch } from "../../api/client";
+import { API_BASE_URL, ApiError, apiFetch, authorizedFetch, throwIfNotOk } from "../../api/client";
 import type { Attachment } from "./types";
 
 export function listAttachments(token: string, transactionId: number): Promise<Attachment[]> {
@@ -13,18 +13,13 @@ export async function uploadAttachment(
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/transactions/${transactionId}/attachments`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: formData,
-  });
+  const response = await authorizedFetch(
+    `${API_BASE_URL}/transactions/${transactionId}/attachments`,
+    token,
+    { method: "POST", body: formData },
+  );
 
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    const detail =
-      typeof body?.detail === "string" ? body.detail : `La petición falló con estado ${response.status}`;
-    throw new ApiError(response.status, detail);
-  }
+  await throwIfNotOk(response);
 
   return response.json() as Promise<Attachment>;
 }
@@ -34,9 +29,7 @@ export function deleteAttachment(token: string, attachmentId: number): Promise<v
 }
 
 export async function fetchAttachmentBlob(token: string, attachmentId: number): Promise<Blob> {
-  const response = await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const response = await authorizedFetch(`${API_BASE_URL}/attachments/${attachmentId}`, token);
   if (!response.ok) {
     throw new ApiError(response.status, "No se pudo abrir el adjunto");
   }

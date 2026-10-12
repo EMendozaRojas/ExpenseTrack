@@ -22,12 +22,8 @@ describe("SocialCallbackPage", () => {
     navigate.mockReset();
   });
 
-  it("guarda los tokens de la URL y navega a la página principal", async () => {
-    window.history.pushState(
-      {},
-      "",
-      "/auth/social-callback?access_token=abc&refresh_token=xyz",
-    );
+  it("guarda los tokens del fragmento, los borra de la URL y navega a la página principal", async () => {
+    window.history.pushState({}, "", "/auth/social-callback#access_token=abc&refresh_token=xyz");
 
     render(
       <MemoryRouter>
@@ -37,6 +33,7 @@ describe("SocialCallbackPage", () => {
 
     await waitFor(() => expect(loginWithTokens).toHaveBeenCalledWith("abc", "xyz"));
     expect(navigate).toHaveBeenCalledWith("/", { replace: true });
+    expect(window.location.hash).toBe("");
   });
 
   it("muestra un error si falta el access_token", async () => {

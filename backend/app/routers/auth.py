@@ -1,4 +1,5 @@
 from typing import Annotated
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
@@ -282,8 +283,9 @@ async def google_oauth_callback(
 
     access_token = create_access_token(subject=str(user.id))
     refresh_token = issue_refresh_token(db, user.id)
-    redirect_url = (
-        f"{settings.frontend_base_url}/auth/social-callback"
-        f"?access_token={access_token}&refresh_token={refresh_token}"
-    )
+    # Los tokens van en el fragmento (#…), no en la query: el navegador no
+    # envía el fragmento al servidor ni en la cabecera Referer, así que no
+    # acaban en logs. El frontend lo borra de la barra de direcciones al leerlo.
+    fragment = urlencode({"access_token": access_token, "refresh_token": refresh_token})
+    redirect_url = f"{settings.frontend_base_url}/auth/social-callback#{fragment}"
     return RedirectResponse(redirect_url)
