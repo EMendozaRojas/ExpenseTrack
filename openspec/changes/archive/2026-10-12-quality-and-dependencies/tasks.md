@@ -21,4 +21,4 @@
 ## 4. Verificación
 
 - [x] 4.1 `pre-commit run --all-files` equivalente en verde (ruff, formato, mypy, ESLint, Prettier, pytest, vitest, build)
-- [ ] 4.2 La autora instala `pre-commit` y los hooks; el primer push a GitHub muestra el CI en verde
+- [x] 4.2 La autora instala `pre-commit` y los hooks; el primer push a GitHub muestra el CI en verde
