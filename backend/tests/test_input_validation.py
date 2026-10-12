@@ -237,3 +237,48 @@ def test_detect_mime_recognizes_allowed_types() -> None:
 def test_safe_filename_strips_paths() -> None:
     assert safe_filename("C:\\Users\\ana\\recibo.png") == "recibo.png"
     assert safe_filename("") == "adjunto"
+
+
+# --- Hallazgos de la segunda revisión ----------------------------------------------
+
+
+def test_register_rejects_password_over_72_bytes(client: TestClient) -> None:
+    # 72 caracteres pero 144 bytes: bcrypt solo usaría la mitad.
+    response = client.post(
+        "/api/v1/auth/register", json={"email": "enes@example.com", "password": "ñ" * 72}
+    )
+
+    assert response.status_code == 422
+    assert "72 bytes" in response.json()["detail"][0]["msg"]
+
+
+def test_register_accepts_password_of_exactly_72_bytes(client: TestClient) -> None:
+    response = client.post(
+        "/api/v1/auth/register", json={"email": "justo@example.com", "password": "ñ" * 36}
+    )
+
+    assert response.status_code == 201
+
+
+def test_long_statement_description_is_shortened_and_imported(
+    client: TestClient, auth_headers, make_account
+) -> None:
+    headers, user = auth_headers()
+    account = make_account(user)
+    concept = "COMPRA " + "X" * 293  # 300 caracteres
+    csv_text = f"Fecha,Concepto,Importe\n2026-03-05,{concept},-12.50\n"
+
+    preview = client.post(
+        "/api/v1/imports/",
+        data={"account_id": str(account.id)},
+        files={"file": ("extracto.csv", csv_text.encode(), "text/csv")},
+        headers=headers,
+    )
+    assert preview.status_code == 201
+    row = preview.json()["rows"][0]
+    assert row["raw_description"] == concept[:255]
+
+    commit = client.post(f"/api/v1/imports/{preview.json()['id']}/commit", json={}, headers=headers)
+    assert commit.status_code == 200
+    transactions = client.get("/api/v1/transactions/", headers=headers).json()["items"]
+    assert [t["raw_description"] for t in transactions] == [concept[:255]]

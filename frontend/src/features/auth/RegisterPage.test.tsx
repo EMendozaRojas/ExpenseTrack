@@ -62,6 +62,20 @@ describe("RegisterPage", () => {
     expect(api.register).not.toHaveBeenCalled();
   });
 
+  it("limita la contraseña a 72 bytes (la ñ cuenta doble)", async () => {
+    const user = userEvent.setup();
+    renderRegisterPage();
+
+    const password = "ñ".repeat(37); // 37 caracteres, 74 bytes
+    await user.type(screen.getByLabelText("Email"), "demo@example.com");
+    await user.type(screen.getByLabelText("Contraseña"), password);
+    await user.type(screen.getByLabelText("Confirmar contraseña"), password);
+    await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("72 bytes");
+    expect(api.register).not.toHaveBeenCalled();
+  });
+
   it("registra e inicia sesión automáticamente", async () => {
     const user = userEvent.setup();
     vi.mocked(api.register).mockResolvedValue({

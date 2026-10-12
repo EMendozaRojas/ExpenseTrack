@@ -26,6 +26,9 @@ DESCRIPTION_ALIASES = {
 DATE_FORMATS = ("%Y-%m-%d", "%d/%m/%Y", "%d-%m-%Y", "%d/%m/%y")
 
 
+MAX_DESCRIPTION_LENGTH = 255
+
+
 class StatementParseError(Exception):
     pass
 
@@ -121,7 +124,9 @@ def parse_csv(content: bytes) -> list[ParsedRow]:
 
         if amount == 0:
             continue
-        description = (raw_row.get(desc_col) or "").strip()
+        # Recortado al tamaño de la columna: un concepto largo del banco no debe
+        # impedir importar el extracto entero.
+        description = (raw_row.get(desc_col) or "").strip()[:MAX_DESCRIPTION_LENGTH]
         rows.append(ParsedRow(posted_at=posted_at, amount=amount, raw_description=description))
 
     if not rows:

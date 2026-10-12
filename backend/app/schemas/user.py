@@ -2,6 +2,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, computed_field, field_validator
 
+MAX_PASSWORD_BYTES = 72
+
 
 def normalize_email(value: str) -> str:
     """Los emails se guardan y se comparan sin espacios y en minúsculas."""
@@ -16,8 +18,8 @@ class UserCreate(BaseModel):
     )
     password: str = Field(
         min_length=8,
-        max_length=72,
-        description="Contraseña, de 8 a 72 caracteres.",
+        description="Contraseña: al menos 8 caracteres y como máximo 72 bytes (lo que usa "
+        "bcrypt; las letras con acento o la ñ cuentan doble).",
         examples=["una-contraseña-segura"],
     )
 
@@ -25,6 +27,18 @@ class UserCreate(BaseModel):
     @classmethod
     def email_normalized(cls, value: object) -> object:
         return normalize_email(value) if isinstance(value, str) else value
+
+    @field_validator("password")
+    @classmethod
+    def password_fits_bcrypt(cls, value: str) -> str:
+        # bcrypt solo usa los primeros 72 bytes y descarta el resto sin avisar:
+        # dos contraseñas distintas con esos bytes en común valdrían igual.
+        if len(value.encode("utf-8")) > MAX_PASSWORD_BYTES:
+            raise ValueError(
+                "La contraseña puede tener como máximo 72 bytes "
+                "(las letras con acento o la ñ cuentan doble)"
+            )
+        return value
 
 
 class UserRead(BaseModel):

@@ -8,7 +8,7 @@ import { googleLoginUrl } from "./api";
 import { useAuth } from "./useAuth";
 
 const MIN_PASSWORD_LENGTH = 8;
-const MAX_PASSWORD_LENGTH = 72;
+const MAX_PASSWORD_BYTES = 72;
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -32,9 +32,10 @@ export function RegisterPage() {
       setValidationError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
       return;
     }
-    if (password.length > MAX_PASSWORD_LENGTH) {
+    // bcrypt solo usa 72 bytes: se cuentan bytes, no caracteres (la ñ ocupa 2).
+    if (new TextEncoder().encode(password).length > MAX_PASSWORD_BYTES) {
       setValidationError(
-        `La contraseña puede tener como máximo ${MAX_PASSWORD_LENGTH} caracteres.`,
+        `La contraseña puede tener como máximo ${MAX_PASSWORD_BYTES} bytes (las letras con acento o la ñ cuentan doble).`,
       );
       return;
     }
@@ -76,7 +77,6 @@ export function RegisterPage() {
           autoComplete="new-password"
           required
           minLength={MIN_PASSWORD_LENGTH}
-          maxLength={MAX_PASSWORD_LENGTH}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
