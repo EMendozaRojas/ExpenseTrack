@@ -32,9 +32,10 @@ validación `422`, `detail` es una lista con `loc`, `msg` y `type`). Se usan
 errores de cada endpoint se documentan en OpenAPI con el esquema común
 `ErrorResponse` (`app/core/openapi.py`).
 
-**Testing:** `pytest`, con fixtures para la base de datos de test
-(transacciones con rollback sobre la base de desarrollo, ver
-`tests/conftest.py`). Cuando la lógica depende de la fecha, el "hoy" se fija
+**Testing:** `pytest` sobre su propia base de datos (`<POSTGRES_DB>_test`),
+que se recrea y se migra con Alembic al empezar cada ejecución; cada test va
+en una transacción con rollback y el envío de email está desactivado (ver
+`tests/conftest.py`). Los tests nunca tocan la base de desarrollo. Cuando la lógica depende de la fecha, el "hoy" se fija
 con un fixture (`set_today`) en vez de depender del reloj. Priorizar
 tests de la lógica de negocio y de los endpoints críticos (crear/clasificar
 gastos) sobre perseguir 100% de cobertura.

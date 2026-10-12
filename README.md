@@ -134,6 +134,8 @@ docker compose exec backend pytest        # backend
 docker compose exec frontend npm test     # frontend
 ```
 
+Los tests del backend usan su propia base de datos (`expensetrack_test`), que se crea de cero y se migra en cada ejecución, y no envían emails: no tocan tus datos de desarrollo.
+
 ## Cómo se trabaja en este proyecto
 
 Cada cambio, incluso los pequeños, se planifica antes de escribir código con
