@@ -36,9 +36,7 @@ class Category(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     owner: Mapped["User | None"] = relationship(back_populates="categories")
-    parent: Mapped["Category | None"] = relationship(
-        remote_side=[id], back_populates="children"
-    )
+    parent: Mapped["Category | None"] = relationship(remote_side=[id], back_populates="children")
     children: Mapped[list["Category"]] = relationship(back_populates="parent")
     transactions: Mapped[list["Transaction"]] = relationship(back_populates="category")
     rules: Mapped[list["CategorizationRule"]] = relationship(back_populates="category")

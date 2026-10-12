@@ -3,7 +3,7 @@ from decimal import Decimal
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func
+from sqlalchemy import ColumnElement, func
 from sqlalchemy.orm import Session, aliased
 
 from app.auth.dependencies import get_current_user
@@ -66,9 +66,11 @@ def monthly_dashboard(
             .first()
         )
         if owned is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cuenta no encontrada")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="Cuenta no encontrada"
+            )
 
-    base_filter = (
+    base_filter: tuple[ColumnElement[bool], ...] = (
         Transaction.owner_id == current_user.id,
         Transaction.deleted_at.is_(None),
         Transaction.posted_at >= range_start,

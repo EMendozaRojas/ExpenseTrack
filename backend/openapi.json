@@ -4705,7 +4705,7 @@
             }
           },
           "415": {
-            "description": "El archivo no es JPEG, PNG, WebP ni PDF.",
+            "description": "El archivo no es JPEG, PNG, WebP ni PDF, o su contenido no coincide con el tipo declarado.",
             "content": {
               "application/json": {
                 "example": {
@@ -5127,7 +5127,7 @@
             }
           },
           "415": {
-            "description": "La imagen no es JPEG, PNG ni WebP.",
+            "description": "La imagen no es JPEG, PNG ni WebP, o su contenido no coincide con el tipo declarado.",
             "content": {
               "application/json": {
                 "schema": {
@@ -5463,6 +5463,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 120,
             "title": "Name",
             "description": "Nombre de la cuenta.",
             "examples": [
@@ -5500,7 +5501,9 @@
           "initial_balance": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": -1000000000000.0
               },
               {
                 "type": "string"
@@ -5610,7 +5613,8 @@
           "name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 120
               },
               {
                 "type": "null"
@@ -5849,7 +5853,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "description": "Recibo o documento: JPEG, PNG, WebP o PDF de hasta 10 MB."
           }
@@ -5864,7 +5868,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "description": "Imagen JPEG, PNG o WebP de hasta 5 MB."
           }
@@ -5887,7 +5891,7 @@
           },
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "description": "Extracto en CSV (hasta 5 MB y 10.000 filas)."
           }
@@ -5932,7 +5936,8 @@
           "amount": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0
               },
               {
                 "type": "string"
@@ -6167,7 +6172,8 @@
           "amount": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0
               },
               {
                 "type": "string"
@@ -6277,6 +6283,7 @@
           },
           "pattern": {
             "type": "string",
+            "maxLength": 255,
             "title": "Pattern",
             "description": "Texto a buscar en la contraparte, la descripción original o la nota.",
             "examples": [
@@ -6405,7 +6412,8 @@
           "pattern": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 255
               },
               {
                 "type": "null"
@@ -6470,6 +6478,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 100,
             "title": "Name",
             "description": "Nombre de la categoría.",
             "examples": [
@@ -6507,7 +6516,8 @@
           "icon": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 16
               },
               {
                 "type": "null"
@@ -6522,7 +6532,8 @@
           "color": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 16
               },
               {
                 "type": "null"
@@ -6721,7 +6732,8 @@
           "amount": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0
               },
               {
                 "type": "string"
@@ -6745,7 +6757,8 @@
           "note": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 255
               },
               {
                 "type": "null"
@@ -6831,7 +6844,8 @@
           "amount": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0
               },
               {
                 "type": "string"
@@ -7104,6 +7118,7 @@
         "properties": {
           "series_key": {
             "type": "string",
+            "maxLength": 300,
             "title": "Series Key",
             "description": "`key` de la serie (de `GET /insights/recurring`).",
             "examples": [
@@ -7165,7 +7180,8 @@
           "rate": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0
               },
               {
                 "type": "string"
@@ -7230,6 +7246,7 @@
         "properties": {
           "name": {
             "type": "string",
+            "maxLength": 120,
             "title": "Name",
             "description": "Nombre de la meta.",
             "examples": [
@@ -7239,7 +7256,8 @@
           "target_amount": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0
               },
               {
                 "type": "string"
@@ -7425,7 +7443,8 @@
           "name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 120
               },
               {
                 "type": "null"
@@ -7440,7 +7459,8 @@
           "target_amount": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0
               },
               {
                 "type": "string"
@@ -7792,7 +7812,8 @@
           "ant_max_amount": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0
               },
               {
                 "type": "string"
@@ -7825,7 +7846,8 @@
           "ant_min_aggregate": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0
               },
               {
                 "type": "string"
@@ -8246,7 +8268,9 @@
           "amount": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": -1000000000000.0
               },
               {
                 "type": "string"
@@ -8297,7 +8321,8 @@
           "counterparty": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 255
               },
               {
                 "type": "null"
@@ -8312,7 +8337,8 @@
           "note": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 255
               },
               {
                 "type": "null"
@@ -8724,7 +8750,9 @@
           "amount": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0,
+                "exclusiveMinimum": -1000000000000.0
               },
               {
                 "type": "string"
@@ -8775,7 +8803,8 @@
           "counterparty": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 255
               },
               {
                 "type": "null"
@@ -8790,7 +8819,8 @@
           "note": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 255
               },
               {
                 "type": "null"
@@ -8832,7 +8862,8 @@
           "amount": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "exclusiveMaximum": 1000000000000.0
               },
               {
                 "type": "string"
@@ -8856,7 +8887,8 @@
           "note": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 255
               },
               {
                 "type": "null"
@@ -8896,17 +8928,19 @@
         "properties": {
           "email": {
             "type": "string",
+            "maxLength": 255,
             "format": "email",
             "title": "Email",
-            "description": "Email con el que se iniciará sesión.",
+            "description": "Email con el que se iniciará sesión. Se guarda en minúsculas.",
             "examples": [
               "ana@example.com"
             ]
           },
           "password": {
             "type": "string",
+            "minLength": 8,
             "title": "Password",
-            "description": "Contraseña.",
+            "description": "Contraseña: al menos 8 caracteres y como máximo 72 bytes (lo que usa bcrypt; las letras con acento o la ñ cuentan doble).",
             "examples": [
               "una-contraseña-segura"
             ]
@@ -8965,7 +8999,8 @@
           "locale": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 10
               },
               {
                 "type": "null"
@@ -8986,7 +9021,8 @@
           "full_name": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 120
               },
               {
                 "type": "null"
@@ -9073,6 +9109,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",

@@ -1,5 +1,5 @@
 import math
-from datetime import date, timezone
+from datetime import UTC, date
 from decimal import Decimal
 from typing import Annotated
 
@@ -353,10 +353,13 @@ def get_projection(
 
     if current >= goal.target_amount:
         return GoalProjection(
-            has_enough_data=True, monthly_pace=Decimal("0"), months_remaining=0, projected_date=today
+            has_enough_data=True,
+            monthly_pace=Decimal("0"),
+            months_remaining=0,
+            projected_date=today,
         )
 
-    created_at_utc = goal.created_at.astimezone(timezone.utc)
+    created_at_utc = goal.created_at.astimezone(UTC)
     created_month_start = _month_start(created_at_utc.year, created_at_utc.month)
     window = [
         (start, end)
@@ -365,7 +368,10 @@ def get_projection(
     ]
     if not window:
         return GoalProjection(
-            has_enough_data=False, monthly_pace=Decimal("0"), months_remaining=None, projected_date=None
+            has_enough_data=False,
+            monthly_pace=Decimal("0"),
+            months_remaining=None,
+            projected_date=None,
         )
 
     window_start = window[0][0]
@@ -383,7 +389,10 @@ def get_projection(
     monthly_pace = (total_in_window / len(window)).quantize(Decimal("0.01"))
     if monthly_pace <= 0:
         return GoalProjection(
-            has_enough_data=False, monthly_pace=monthly_pace, months_remaining=None, projected_date=None
+            has_enough_data=False,
+            monthly_pace=monthly_pace,
+            months_remaining=None,
+            projected_date=None,
         )
 
     remaining = goal.target_amount - current

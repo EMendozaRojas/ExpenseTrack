@@ -3,6 +3,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.limits import MAX_AMOUNT
+
 
 class FxRateCreate(BaseModel):
     rate_date: date = Field(description="Día al que corresponde.", examples=["2026-10-07"])
@@ -11,6 +13,7 @@ class FxRateCreate(BaseModel):
     )
     quote: str = Field(description="Moneda de destino (código ISO 4217).", examples=["EUR"])
     rate: Decimal = Field(
+        lt=MAX_AMOUNT,
         description="Unidades de `quote` por una unidad de `base`. Mayor que cero.",
         examples=["0.9215"],
     )

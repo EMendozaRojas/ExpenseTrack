@@ -62,9 +62,7 @@ def _sort_key(rule: CategorizationRule) -> tuple[int, int]:
     return (-rule.priority, rule.id)
 
 
-def match_category(
-    raw_description: str | None, rules: Iterable[CategorizationRule]
-) -> int | None:
+def match_category(raw_description: str | None, rules: Iterable[CategorizationRule]) -> int | None:
     """Devuelve el category_id de la primera regla habilitada que hace match.
 
     Las reglas del usuario (owner_id no nulo) se evalúan antes que las del

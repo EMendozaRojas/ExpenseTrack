@@ -1,7 +1,7 @@
 """create users, categories and expenses tables
 
 Revision ID: 992f793be938
-Revises: 
+Revises:
 Create Date: 2026-08-13 19:46:46.603959
 
 """

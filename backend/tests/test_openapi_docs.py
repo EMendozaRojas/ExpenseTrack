@@ -76,7 +76,9 @@ def _example_problems() -> list[str]:
     schemas = app.openapi().get("components", {}).get("schemas", {})
     for schema_name in sorted(_request_schema_names()):
         for field_name, field in schemas[schema_name].get("properties", {}).items():
-            if field.get("format") == "binary":
+            # Archivos subidos: OpenAPI 3.0 los marca con `format: binary` y
+            # FastAPI >= 0.12x con `contentMediaType`; no llevan ejemplo.
+            if field.get("format") == "binary" or "contentMediaType" in field:
                 continue
             if not field.get("examples") and "example" not in field:
                 problems.append(f"{schema_name}.{field_name}: falta ejemplo")

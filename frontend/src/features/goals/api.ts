@@ -1,5 +1,10 @@
 import { apiFetch } from "../../api/client";
-import type { GoalContribution, GoalInput, GoalProjection, SavingsGoal } from "../transactions/types";
+import type {
+  GoalContribution,
+  GoalInput,
+  GoalProjection,
+  SavingsGoal,
+} from "../transactions/types";
 
 export function listGoals(token: string): Promise<SavingsGoal[]> {
   return apiFetch<SavingsGoal[]>("/goals/", token);

@@ -1,4 +1,5 @@
 from unittest.mock import AsyncMock, patch
+from urllib.parse import parse_qs, urlsplit
 
 from fastapi.testclient import TestClient
 
@@ -23,16 +24,12 @@ def test_refresh_rotates_token_and_old_one_stops_working(client: TestClient) -> 
         "/api/v1/auth/login", data={"username": "ana@example.com", "password": "secret123"}
     ).json()
 
-    refreshed = client.post(
-        "/api/v1/auth/refresh", json={"refresh_token": login["refresh_token"]}
-    )
+    refreshed = client.post("/api/v1/auth/refresh", json={"refresh_token": login["refresh_token"]})
     assert refreshed.status_code == 200
     new_tokens = refreshed.json()
     assert new_tokens["refresh_token"] != login["refresh_token"]
 
-    reused_old = client.post(
-        "/api/v1/auth/refresh", json={"refresh_token": login["refresh_token"]}
-    )
+    reused_old = client.post("/api/v1/auth/refresh", json={"refresh_token": login["refresh_token"]})
     assert reused_old.status_code == 401
 
 
@@ -45,9 +42,7 @@ def test_logout_revokes_refresh_token(client: TestClient) -> None:
     logout = client.post("/api/v1/auth/logout", json={"refresh_token": login["refresh_token"]})
     assert logout.status_code == 204
 
-    refreshed = client.post(
-        "/api/v1/auth/refresh", json={"refresh_token": login["refresh_token"]}
-    )
+    refreshed = client.post("/api/v1/auth/refresh", json={"refresh_token": login["refresh_token"]})
     assert refreshed.status_code == 401
 
 
@@ -84,16 +79,16 @@ def test_oauth_callback_rejects_invalid_state(client: TestClient) -> None:
     assert response.status_code == 400
 
 
-def test_oauth_callback_creates_new_user_and_links_identity(
-    client: TestClient, db_session
-) -> None:
+def test_oauth_callback_creates_new_user_and_links_identity(client: TestClient, db_session) -> None:
     from app.models.auth_identity import AuthIdentity
     from app.models.user import User
 
     state = google_oauth.create_state()
     fake_userinfo = {"sub": "google-uid-123", "email": "nueva@example.com"}
 
-    with patch.object(google_oauth, "exchange_code_for_userinfo", AsyncMock(return_value=fake_userinfo)):
+    with patch.object(
+        google_oauth, "exchange_code_for_userinfo", AsyncMock(return_value=fake_userinfo)
+    ):
         response = client.get(
             "/api/v1/auth/oauth/google/callback",
             params={"code": "fake-code", "state": state},
@@ -101,10 +96,11 @@ def test_oauth_callback_creates_new_user_and_links_identity(
         )
 
     assert response.status_code == 307
-    location = response.headers["location"]
-    assert "/auth/social-callback" in location
-    assert "access_token=" in location
-    assert "refresh_token=" in location
+    location = urlsplit(response.headers["location"])
+    assert location.path == "/auth/social-callback"
+    assert location.query == ""  # nunca en la query: acabarían en logs y en el Referer
+    fragment = parse_qs(location.fragment)
+    assert fragment["access_token"] and fragment["refresh_token"]
 
     user = db_session.query(User).filter(User.email == "nueva@example.com").first()
     assert user is not None
@@ -125,7 +121,9 @@ def test_oauth_callback_links_existing_account_by_email(client: TestClient, db_s
     state = google_oauth.create_state()
     fake_userinfo = {"sub": "google-uid-456", "email": "existente@example.com"}
 
-    with patch.object(google_oauth, "exchange_code_for_userinfo", AsyncMock(return_value=fake_userinfo)):
+    with patch.object(
+        google_oauth, "exchange_code_for_userinfo", AsyncMock(return_value=fake_userinfo)
+    ):
         response = client.get(
             "/api/v1/auth/oauth/google/callback",
             params={"code": "fake-code", "state": state},
@@ -145,7 +143,9 @@ def test_oauth_callback_reuses_identity_on_second_login(client: TestClient, db_s
 
     state1 = google_oauth.create_state()
     fake_userinfo = {"sub": "google-uid-789", "email": "repetida@example.com"}
-    with patch.object(google_oauth, "exchange_code_for_userinfo", AsyncMock(return_value=fake_userinfo)):
+    with patch.object(
+        google_oauth, "exchange_code_for_userinfo", AsyncMock(return_value=fake_userinfo)
+    ):
         client.get(
             "/api/v1/auth/oauth/google/callback",
             params={"code": "fake-code-1", "state": state1},
@@ -153,7 +153,9 @@ def test_oauth_callback_reuses_identity_on_second_login(client: TestClient, db_s
         )
 
     state2 = google_oauth.create_state()
-    with patch.object(google_oauth, "exchange_code_for_userinfo", AsyncMock(return_value=fake_userinfo)):
+    with patch.object(
+        google_oauth, "exchange_code_for_userinfo", AsyncMock(return_value=fake_userinfo)
+    ):
         client.get(
             "/api/v1/auth/oauth/google/callback",
             params={"code": "fake-code-2", "state": state2},
@@ -167,7 +169,9 @@ def test_oauth_callback_reuses_identity_on_second_login(client: TestClient, db_s
 def test_password_login_rejected_for_social_only_user(client: TestClient) -> None:
     state = google_oauth.create_state()
     fake_userinfo = {"sub": "google-uid-999", "email": "solosocial@example.com"}
-    with patch.object(google_oauth, "exchange_code_for_userinfo", AsyncMock(return_value=fake_userinfo)):
+    with patch.object(
+        google_oauth, "exchange_code_for_userinfo", AsyncMock(return_value=fake_userinfo)
+    ):
         client.get(
             "/api/v1/auth/oauth/google/callback",
             params={"code": "fake-code", "state": state},

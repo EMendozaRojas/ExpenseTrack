@@ -3,6 +3,8 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.limits import MAX_AMOUNT
+
 _ANT_MAX = "Importe máximo de un gasto para contar como gasto hormiga."
 _ANT_MIN_OCCURRENCES = "Mínimo de gastos en el mes para que una subcategoría aparezca."
 _ANT_MIN_AGGREGATE = "Mínimo que deben sumar en el mes."
@@ -27,6 +29,7 @@ class RecurringSeriesRead(BaseModel):
 
 class DismissRequest(BaseModel):
     series_key: str = Field(
+        max_length=300,
         description="`key` de la serie (de `GET /insights/recurring`).",
         examples=["expense:NETFLIX"],
     )
@@ -50,13 +53,16 @@ class InsightSettingsRead(BaseModel):
 
 class InsightSettingsUpdate(BaseModel):
     ant_max_amount: Decimal | None = Field(
-        default=None, description=_ANT_MAX + " Mayor que cero.", examples=["5.00"]
+        lt=MAX_AMOUNT, default=None, description=_ANT_MAX + " Mayor que cero.", examples=["5.00"]
     )
     ant_min_occurrences: int | None = Field(
         default=None, description=_ANT_MIN_OCCURRENCES + " Al menos 1.", examples=[4]
     )
     ant_min_aggregate: Decimal | None = Field(
-        default=None, description=_ANT_MIN_AGGREGATE + " Mayor que cero.", examples=["20.00"]
+        lt=MAX_AMOUNT,
+        default=None,
+        description=_ANT_MIN_AGGREGATE + " Mayor que cero.",
+        examples=["20.00"],
     )
 
     @field_validator("ant_max_amount", "ant_min_aggregate")

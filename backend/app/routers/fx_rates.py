@@ -31,7 +31,7 @@ def list_fx_rates(
         query = query.filter(FxRate.base == base.upper())
     if quote is not None:
         query = query.filter(FxRate.quote == quote.upper())
-    return query.order_by(FxRate.rate_date.desc()).all()
+    return [FxRateRead.model_validate(rate) for rate in query.order_by(FxRate.rate_date.desc())]
 
 
 @router.post(
@@ -77,4 +77,4 @@ def create_fx_rate(
     db.add(fx_rate)
     db.commit()
     db.refresh(fx_rate)
-    return fx_rate
+    return FxRateRead.model_validate(fx_rate)

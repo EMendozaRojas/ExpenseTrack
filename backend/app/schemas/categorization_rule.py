@@ -15,7 +15,7 @@ class CategorizationRuleCreate(BaseModel):
     match_type: MatchType = Field(
         default="contains", description=_MATCH_TYPE, examples=["contains"]
     )
-    pattern: str = Field(description=_PATTERN, examples=["mercadona"])
+    pattern: str = Field(max_length=255, description=_PATTERN, examples=["mercadona"])
     category_id: int = Field(description="Subcategoría que se asigna.", examples=[95])
     priority: int = Field(default=0, description=_PRIORITY, examples=[10])
     is_enabled: bool = Field(default=True, description="Si la regla está activa.", examples=[True])
@@ -25,7 +25,9 @@ class CategorizationRuleUpdate(BaseModel):
     match_type: MatchType | None = Field(
         default=None, description=_MATCH_TYPE, examples=["starts_with"]
     )
-    pattern: str | None = Field(default=None, description=_PATTERN, examples=["lidl"])
+    pattern: str | None = Field(
+        max_length=255, default=None, description=_PATTERN, examples=["lidl"]
+    )
     category_id: int | None = Field(
         default=None, description="Subcategoría que se asigna.", examples=[95]
     )

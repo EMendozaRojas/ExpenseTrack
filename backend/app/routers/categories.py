@@ -110,7 +110,7 @@ def create_category(
             )
         if parent.parent_id is not None:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail="Una subcategoría no puede tener hijas",
             )
         kind = parent.kind
@@ -176,9 +176,7 @@ def delete_category(
         .first()
     )
     if category is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Categoría no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoría no encontrada")
 
     # Antes de reasignar sus movimientos: conserva lo gastado en los meses
     # pasados de sus presupuestos (después caería a 0).

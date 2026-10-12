@@ -1,4 +1,5 @@
 from typing import Annotated
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, status
 from fastapi.responses import RedirectResponse
@@ -13,7 +14,7 @@ from app.core.openapi import AUTH_RESPONSES, Tag, error_responses
 from app.models.auth_identity import AuthIdentity
 from app.models.user import User
 from app.schemas.token import LogoutRequest, RefreshRequest, Token
-from app.schemas.user import UserCreate, UserRead
+from app.schemas.user import UserCreate, UserRead, normalize_email
 from app.services import google_oauth
 from app.services.refresh_tokens import (
     get_valid_refresh_token,
@@ -48,9 +49,7 @@ class LoginForm(OAuth2PasswordRequestForm):
         password: Annotated[
             str, Form(description="Contraseña del usuario.", examples=["demodatos1234"])
         ],
-        scope: Annotated[
-            str, Form(description=_UNUSED_OAUTH2_FIELD, examples=[""])
-        ] = "",
+        scope: Annotated[str, Form(description=_UNUSED_OAUTH2_FIELD, examples=[""])] = "",
         client_id: Annotated[
             str | None,
             Form(description=_UNUSED_OAUTH2_FIELD, examples=[None]),
@@ -114,7 +113,7 @@ def login(
     Es el endpoint que usa el botón **Authorize** de esta documentación.
     Las cuentas creadas solo con Google no tienen contraseña y no pueden
     entrar por aquí."""
-    user = db.query(User).filter(User.email == form_data.username).first()
+    user = db.query(User).filter(User.email == normalize_email(form_data.username)).first()
     if (
         user is None
         or user.hashed_password is None
@@ -126,7 +125,9 @@ def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
     refresh_token = issue_refresh_token(db, user.id)
-    return Token(access_token=create_access_token(subject=str(user.id)), refresh_token=refresh_token)
+    return Token(
+        access_token=create_access_token(subject=str(user.id)), refresh_token=refresh_token
+    )
 
 
 @router.post(
@@ -135,8 +136,10 @@ def login(
     summary="Renovar el token de acceso",
     responses=error_responses(
         401,
-        e401=("El refresh token no existe, está revocado o ha caducado.",
-              "Refresh token inválido o expirado"),
+        e401=(
+            "El refresh token no existe, está revocado o ha caducado.",
+            "Refresh token inválido o expirado",
+        ),
     ),
 )
 def refresh(payload: RefreshRequest, db: Annotated[Session, Depends(get_db)]) -> Token:
@@ -182,8 +185,10 @@ def me(current_user: Annotated[User, Depends(get_current_user)]) -> User:
         307: {"description": "Redirección a la pantalla de consentimiento de Google."},
         **error_responses(
             503,
-            e503=("Faltan las credenciales de Google OAuth en este entorno.",
-                  "Login con Google no está configurado en este entorno"),
+            e503=(
+                "Faltan las credenciales de Google OAuth en este entorno.",
+                "Login con Google no está configurado en este entorno",
+            ),
         ),
     },
 )
@@ -216,8 +221,10 @@ def google_oauth_start() -> RedirectResponse:
             502,
             e400=("El `state` no es válido o ha caducado.", "state inválido o expirado"),
             e500=("No se pudo resolver el usuario.", "No se pudo resolver el usuario"),
-            e502=("Google rechazó el código o no devolvió el email.",
-                  "Google no devolvió sub/email"),
+            e502=(
+                "Google rechazó el código o no devolvió el email.",
+                "Google no devolvió sub/email",
+            ),
         ),
     },
 )
@@ -231,7 +238,9 @@ async def google_oauth_callback(
     el mismo email) y redirige al frontend con los tokens."""
     settings = get_settings()
     if not google_oauth.verify_state(state):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="state inválido o expirado")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="state inválido o expirado"
+        )
 
     try:
         userinfo = await google_oauth.exchange_code_for_userinfo(code)
@@ -239,7 +248,7 @@ async def google_oauth_callback(
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
     provider_uid = userinfo.get("sub")
-    email = userinfo.get("email")
+    email = normalize_email(userinfo.get("email") or "")
     if not provider_uid or not email:
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY, detail="Google no devolvió sub/email"
@@ -261,16 +270,22 @@ async def google_oauth_callback(
             user = User(email=email, hashed_password=None)
             db.add(user)
             db.flush()
-        db.add(AuthIdentity(user_id=user.id, provider="google", provider_uid=provider_uid, email=email))
+        db.add(
+            AuthIdentity(user_id=user.id, provider="google", provider_uid=provider_uid, email=email)
+        )
         db.commit()
 
     if user is None:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="No se pudo resolver el usuario")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="No se pudo resolver el usuario",
+        )
 
     access_token = create_access_token(subject=str(user.id))
     refresh_token = issue_refresh_token(db, user.id)
-    redirect_url = (
-        f"{settings.frontend_base_url}/auth/social-callback"
-        f"?access_token={access_token}&refresh_token={refresh_token}"
-    )
+    # Los tokens van en el fragmento (#…), no en la query: el navegador no
+    # envía el fragmento al servidor ni en la cabecera Referer, así que no
+    # acaban en logs. El frontend lo borra de la barra de direcciones al leerlo.
+    fragment = urlencode({"access_token": access_token, "refresh_token": refresh_token})
+    redirect_url = f"{settings.frontend_base_url}/auth/social-callback#{fragment}"
     return RedirectResponse(redirect_url)

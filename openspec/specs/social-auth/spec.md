@@ -45,3 +45,44 @@ The system SHALL issue a short-lived access token and a refresh token on login. 
 #### Scenario: Logout revokes refresh
 - **WHEN** the user logs out and then tries to refresh with the same token
 - **THEN** the system rejects the refresh
+
+### Requirement: Registration enforces a minimum password and a normalized email
+Registering with email and password SHALL require a password of at least 8 characters and at most 72 bytes in UTF-8 (the length bcrypt uses), so that no accepted password is silently truncated. Emails SHALL be stored and compared trimmed and in lowercase when registering, signing in with a password and signing in with Google, so that addresses differing only in case belong to the same account.
+
+#### Scenario: Short password
+- **WHEN** a user registers with the password `1234567`
+- **THEN** the system responds 422 and creates no account
+
+#### Scenario: Password longer than 72 bytes
+- **WHEN** a user registers with a password of 72 «ñ» characters (144 bytes)
+- **THEN** the system responds 422 explaining the limit in bytes, and creates no account
+
+#### Scenario: Same email with different case
+- **WHEN** `ana@example.com` is registered and someone registers `ANA@Example.com`
+- **THEN** the system responds 409 «El email ya está registrado»
+
+#### Scenario: Sign in with different case
+- **WHEN** the user registered as `ana@example.com` signs in as ` Ana@Example.com`
+- **THEN** the sign-in succeeds
+
+### Requirement: The frontend renews the session with the refresh token
+When a request made with an access token is answered with 401, the frontend SHALL exchange the stored refresh token for new tokens, store both, and repeat the request once with the new access token. Concurrent requests that fail at the same time SHALL share a single renewal. If there is no refresh token or the renewal fails, the frontend SHALL end the session locally and show the sign-in screen.
+
+#### Scenario: Access token expired
+- **WHEN** the access token has expired and the user opens a screen
+- **THEN** the frontend renews the tokens and the screen loads normally
+
+#### Scenario: Several requests at once
+- **WHEN** three requests fail with 401 at the same time
+- **THEN** a single call to `/auth/refresh` is made and the three requests are repeated with the new token
+
+#### Scenario: Refresh token no longer valid
+- **WHEN** the renewal responds 401
+- **THEN** the session is cleared and the user is taken to the sign-in screen
+
+### Requirement: Google sign-in does not expose tokens in the query string
+After a successful Google sign-in, the redirect to the frontend SHALL carry the tokens in the URL fragment, never in the query string, and the frontend SHALL remove them from the address bar as soon as it reads them.
+
+#### Scenario: Successful Google sign-in
+- **WHEN** the Google callback succeeds
+- **THEN** the redirect URL has no query parameters with tokens, the tokens are in the fragment, and after signing in the address bar no longer shows them

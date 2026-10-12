@@ -5,6 +5,8 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.schemas.limits import MAX_AMOUNT
+
 Direction = Literal["income", "expense", "transfer"]
 
 _AMOUNT = (
@@ -14,7 +16,7 @@ _AMOUNT = (
 _DIRECTION = "`expense` (gasto) o `income` (ingreso). Debe ser coherente con el signo de `amount`."
 _CATEGORY = (
     "Subcategoría (no se admite una categoría raíz). Si se omite, se aplican las reglas de "
-    "categorización y, si ninguna coincide, \"Sin Clasificar\"."
+    'categorización y, si ninguna coincide, "Sin Clasificar".'
 )
 _COUNTERPARTY = "Comercio o persona con quien se hizo el movimiento."
 _NOTE = "Nota libre."
@@ -22,14 +24,16 @@ _NOTE = "Nota libre."
 
 class TransactionCreate(BaseModel):
     account_id: int = Field(description="Cuenta del movimiento.", examples=[1110])
-    amount: Decimal = Field(description=_AMOUNT, examples=["-42.50"])
+    amount: Decimal = Field(gt=-MAX_AMOUNT, lt=MAX_AMOUNT, description=_AMOUNT, examples=["-42.50"])
     direction: Literal["income", "expense"] = Field(description=_DIRECTION, examples=["expense"])
     posted_at: date = Field(description="Fecha del movimiento.", examples=["2026-10-07"])
     category_id: int | None = Field(default=None, description=_CATEGORY, examples=[95])
     counterparty: str | None = Field(
-        default=None, description=_COUNTERPARTY, examples=["Mercadona"]
+        max_length=255, default=None, description=_COUNTERPARTY, examples=["Mercadona"]
     )
-    note: str | None = Field(default=None, description=_NOTE, examples=["Compra semanal"])
+    note: str | None = Field(
+        max_length=255, default=None, description=_NOTE, examples=["Compra semanal"]
+    )
     currency: str | None = Field(
         default=None,
         description="Moneda del importe (código ISO 4217). Por defecto, la de la cuenta; si es "
@@ -49,18 +53,20 @@ class TransactionCreate(BaseModel):
 
 
 class TransactionUpdate(BaseModel):
-    amount: Decimal = Field(description=_AMOUNT, examples=["-45.00"])
+    amount: Decimal = Field(gt=-MAX_AMOUNT, lt=MAX_AMOUNT, description=_AMOUNT, examples=["-45.00"])
     direction: Literal["income", "expense"] = Field(description=_DIRECTION, examples=["expense"])
     posted_at: date = Field(description="Fecha del movimiento.", examples=["2026-10-07"])
     category_id: int | None = Field(
         default=None,
-        description="Subcategoría. Si se omite, el movimiento pasa a \"Sin Clasificar\".",
+        description='Subcategoría. Si se omite, el movimiento pasa a "Sin Clasificar".',
         examples=[95],
     )
     counterparty: str | None = Field(
-        default=None, description=_COUNTERPARTY, examples=["Mercadona"]
+        max_length=255, default=None, description=_COUNTERPARTY, examples=["Mercadona"]
     )
-    note: str | None = Field(default=None, description=_NOTE, examples=["Compra semanal"])
+    note: str | None = Field(
+        max_length=255, default=None, description=_NOTE, examples=["Compra semanal"]
+    )
 
     @model_validator(mode="after")
     def check_amount_sign(self) -> "TransactionUpdate":
@@ -98,9 +104,7 @@ class TransactionRead(BaseModel):
     amount_in_account_currency: Decimal | None = Field(
         description="Importe convertido a la moneda de la cuenta."
     )
-    transfer_group_id: UUID | None = Field(
-        description="Enlaza los dos lados de una transferencia."
-    )
+    transfer_group_id: UUID | None = Field(description="Enlaza los dos lados de una transferencia.")
     created_at: datetime = Field(description="Fecha de alta.")
     updated_at: datetime = Field(description="Fecha de la última modificación.")
 
@@ -122,9 +126,13 @@ class TransferCreate(BaseModel):
     to_account_id: int = Field(
         description="Cuenta de destino (distinta de la de origen).", examples=[2043]
     )
-    amount: Decimal = Field(description="Importe a transferir, en positivo.", examples=["200.00"])
+    amount: Decimal = Field(
+        lt=MAX_AMOUNT, description="Importe a transferir, en positivo.", examples=["200.00"]
+    )
     posted_at: date = Field(description="Fecha de la transferencia.", examples=["2026-10-07"])
-    note: str | None = Field(default=None, description=_NOTE, examples=["Ahorro del mes"])
+    note: str | None = Field(
+        max_length=255, default=None, description=_NOTE, examples=["Ahorro del mes"]
+    )
 
     @model_validator(mode="after")
     def check_amount(self) -> "TransferCreate":

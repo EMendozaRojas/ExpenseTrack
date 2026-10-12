@@ -82,7 +82,9 @@ button,
   padding: 0.55rem 1.1rem;
   cursor: pointer;
   text-decoration: none;
-  transition: filter 0.15s ease, background 0.15s ease;
+  transition:
+    filter 0.15s ease,
+    background 0.15s ease;
 }
 
 button {

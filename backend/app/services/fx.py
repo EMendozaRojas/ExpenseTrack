@@ -36,7 +36,9 @@ def convert(
 
     direct = (
         db.query(FxRate)
-        .filter(FxRate.rate_date == on_date, FxRate.base == from_currency, FxRate.quote == to_currency)
+        .filter(
+            FxRate.rate_date == on_date, FxRate.base == from_currency, FxRate.quote == to_currency
+        )
         .first()
     )
     if direct is not None:
@@ -44,7 +46,9 @@ def convert(
 
     inverse = (
         db.query(FxRate)
-        .filter(FxRate.rate_date == on_date, FxRate.base == to_currency, FxRate.quote == from_currency)
+        .filter(
+            FxRate.rate_date == on_date, FxRate.base == to_currency, FxRate.quote == from_currency
+        )
         .first()
     )
     if inverse is not None:

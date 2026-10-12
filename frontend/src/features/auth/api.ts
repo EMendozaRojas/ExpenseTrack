@@ -25,6 +25,13 @@ export function fetchCurrentUser(token: string): Promise<User> {
   return apiFetch<User>("/auth/me", token);
 }
 
+export function refreshRequest(refreshToken: string): Promise<AuthTokens> {
+  return apiFetch<AuthTokens>("/auth/refresh", null, {
+    method: "POST",
+    body: JSON.stringify({ refresh_token: refreshToken }),
+  });
+}
+
 export function logoutRequest(refreshToken: string): Promise<void> {
   return apiFetch<void>("/auth/logout", null, {
     method: "POST",

@@ -22,7 +22,7 @@ class UserPreferencesUpdate(BaseModel):
         examples=["EUR"],
     )
     locale: str | None = Field(
-        default=None, description="Nuevo idioma y región.", examples=["es-ES"]
+        max_length=10, default=None, description="Nuevo idioma y región.", examples=["es-ES"]
     )
 
     @field_validator("base_currency")

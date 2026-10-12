@@ -57,6 +57,7 @@ def _autocategorize(
     text = counterparty or note
     return match_category(text, rules)
 
+
 DEFAULT_PAGE_SIZE = 50
 MAX_PAGE_SIZE = 200
 
@@ -100,12 +101,10 @@ def _check_category(db: Session, category_id: int | None, current_user: User) ->
         .first()
     )
     if category is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Categoría no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoría no encontrada")
     if category.parent_id is None:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Una transacción debe asignarse a una subcategoría, no a la categoría principal",
         )
 
@@ -208,9 +207,7 @@ def list_transactions(
         )
 
     rows = (
-        query.order_by(Transaction.posted_at.desc(), Transaction.id.desc())
-        .limit(limit + 1)
-        .all()
+        query.order_by(Transaction.posted_at.desc(), Transaction.id.desc()).limit(limit + 1).all()
     )
     next_cursor = None
     if len(rows) > limit:
@@ -265,7 +262,9 @@ def create_transaction(
                 db, payload.amount, currency, account.currency, payload.posted_at
             )
         except MissingFxRateError as exc:
-            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+            ) from exc
 
     transaction = Transaction(
         account_id=payload.account_id,
@@ -408,11 +407,13 @@ def list_trash(
     items = []
     for row in rows:
         base = TransactionRead.model_validate(row).model_dump()
+        deleted_at = row.deleted_at
+        assert deleted_at is not None  # la consulta solo trae movimientos borrados
         items.append(
             TransactionTrashRead(
                 **base,
-                deleted_at=row.deleted_at,
-                purge_at=row.deleted_at + timedelta(days=RETENTION_DAYS),
+                deleted_at=deleted_at,
+                purge_at=deleted_at + timedelta(days=RETENTION_DAYS),
             )
         )
     return items

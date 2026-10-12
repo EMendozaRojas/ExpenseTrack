@@ -1,4 +1,4 @@
-import { API_BASE_URL, ApiError, apiFetch } from "../../api/client";
+import { API_BASE_URL, apiFetch, authorizedFetch, throwIfNotOk } from "../../api/client";
 import type { ImportCommitResult, ImportPreview, ImportStrategy } from "../transactions/types";
 
 export async function uploadStatement(
@@ -10,18 +10,12 @@ export async function uploadStatement(
   formData.append("account_id", String(accountId));
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/imports/`, {
+  const response = await authorizedFetch(`${API_BASE_URL}/imports/`, token, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
     body: formData,
   });
 
-  if (!response.ok) {
-    const body = await response.json().catch(() => null);
-    const detail =
-      typeof body?.detail === "string" ? body.detail : `La petición falló con estado ${response.status}`;
-    throw new ApiError(response.status, detail);
-  }
+  await throwIfNotOk(response);
 
   return response.json() as Promise<ImportPreview>;
 }

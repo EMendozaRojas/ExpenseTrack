@@ -1,20 +1,56 @@
+import os
 from collections.abc import Generator
 from datetime import date
+from pathlib import Path
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import event
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.engine import make_url
 
-import app.services.storage as storage
-from app.auth.security import create_access_token, hash_password
-from app.core.database import engine, get_db
-from app.main import app
-from app.models.account import Account
-from app.models.user import User
-from app.services.storage import LocalStorageBackend
+# Aislamiento: antes de importar nada de `app` (que lee la configuración una
+# sola vez), los tests pasan a su propia base `<nombre>_test` y sin SMTP, para
+# no tocar los datos de desarrollo ni enviar correo.
+_dev_url = make_url(os.environ["DATABASE_URL"])
+if not (_dev_url.database or "").endswith("_test"):
+    _dev_url = _dev_url.set(database=f"{_dev_url.database}_test")
+os.environ["DATABASE_URL"] = _dev_url.render_as_string(hide_password=False)
+os.environ["SMTP_HOST"] = ""
+
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import create_engine, event, text  # noqa: E402
+from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
+
+import app.services.storage as storage  # noqa: E402
+from alembic import command  # noqa: E402
+from alembic.config import Config  # noqa: E402
+from app.auth.security import create_access_token, hash_password  # noqa: E402
+from app.core.database import engine, get_db  # noqa: E402
+from app.main import app  # noqa: E402
+from app.models.account import Account  # noqa: E402
+from app.models.user import User  # noqa: E402
+from app.services.storage import LocalStorageBackend  # noqa: E402
 
 TestingSessionLocal = sessionmaker(bind=engine)
+
+ALEMBIC_INI = Path(__file__).resolve().parents[1] / "alembic.ini"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def test_database() -> None:
+    """Recrea la base de tests desde cero y la migra a la última revisión.
+
+    Así cada ejecución parte de un estado conocido y, de paso, vuelve a
+    comprobar que las migraciones funcionan en una base vacía."""
+    name = _dev_url.database
+    engine.dispose()
+    admin = create_engine(_dev_url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    with admin.connect() as conn:
+        conn.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+        conn.execute(text(f'CREATE DATABASE "{name}"'))
+    admin.dispose()
+
+    config = Config(str(ALEMBIC_INI))
+    config.set_main_option("script_location", str(ALEMBIC_INI.parent / "alembic"))
+    command.upgrade(config, "head")
 
 
 @pytest.fixture(autouse=True)

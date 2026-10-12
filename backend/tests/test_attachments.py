@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+PNG = b"\x89PNG\r\n\x1a\n"  # firma real de un PNG: el contenido se comprueba al subir
+
 
 def _create_transaction(client: TestClient, headers: dict[str, str], account_id: int) -> int:
     response = client.post(
@@ -26,7 +28,7 @@ def test_upload_list_download_and_delete_attachment(
     upload = client.post(
         f"/api/v1/transactions/{transaction_id}/attachments",
         headers=headers,
-        files={"file": ("recibo.png", b"\x89PNG\r\n fake png bytes", "image/png")},
+        files={"file": ("recibo.png", PNG + b" fake png bytes", "image/png")},
     )
     assert upload.status_code == 201
     body = upload.json()
@@ -40,7 +42,7 @@ def test_upload_list_download_and_delete_attachment(
 
     download = client.get(f"/api/v1/attachments/{body['id']}", headers=headers)
     assert download.status_code == 200
-    assert download.content == b"\x89PNG\r\n fake png bytes"
+    assert download.content == PNG + b" fake png bytes"
     assert download.headers["content-type"] == "image/png"
 
     deleted = client.delete(f"/api/v1/attachments/{body['id']}", headers=headers)
@@ -88,7 +90,7 @@ def test_attachment_upload_requires_owned_transaction(
     response = client.post(
         f"/api/v1/transactions/{transaction_id}/attachments",
         headers=headers_b,
-        files={"file": ("recibo.png", b"data", "image/png")},
+        files={"file": ("recibo.png", PNG + b"data", "image/png")},
     )
     assert response.status_code == 404
 
@@ -104,7 +106,7 @@ def test_attachment_download_isolated_between_users(
     upload = client.post(
         f"/api/v1/transactions/{transaction_id}/attachments",
         headers=headers_a,
-        files={"file": ("recibo.png", b"data", "image/png")},
+        files={"file": ("recibo.png", PNG + b"data", "image/png")},
     ).json()
 
     response = client.get(f"/api/v1/attachments/{upload['id']}", headers=headers_b)

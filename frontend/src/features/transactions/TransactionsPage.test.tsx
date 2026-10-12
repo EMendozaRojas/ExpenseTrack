@@ -147,7 +147,9 @@ describe("TransactionsPage", () => {
     await screen.findByText("Supermercado");
     await user.click(screen.getByRole("button", { name: "📥 Importar estado de cuenta" }));
 
-    expect(await screen.findByRole("dialog", { name: "Importar estado de cuenta" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("dialog", { name: "Importar estado de cuenta" }),
+    ).toBeInTheDocument();
   });
 
   it("ofrece crear una cuenta cuando el usuario no tiene ninguna, sin tipo", async () => {

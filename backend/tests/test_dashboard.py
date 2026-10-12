@@ -49,7 +49,9 @@ def test_income_expense_net_and_status(client: TestClient, auth_headers, make_ac
     )
     _create_expense(client, headers, account.id, "-400.00", "2026-03-10", supermercado_id)
 
-    response = client.get("/api/v1/dashboard/summary", params={"year": 2026, "month": 3}, headers=headers)
+    response = client.get(
+        "/api/v1/dashboard/summary", params={"year": 2026, "month": 3}, headers=headers
+    )
     assert response.status_code == 200
     body = response.json()
     assert body["income_total"] == "1000.00"
@@ -58,9 +60,7 @@ def test_income_expense_net_and_status(client: TestClient, auth_headers, make_ac
     assert body["net_status"] == "a_favor"
 
 
-def test_net_status_en_contra_when_negative(
-    client: TestClient, auth_headers, make_account
-) -> None:
+def test_net_status_en_contra_when_negative(client: TestClient, auth_headers, make_account) -> None:
     headers, user = auth_headers()
     account = make_account(user)
     supermercado_id = _find_category(client, headers, "expense", "Alimentación", "Supermercado")
@@ -77,7 +77,9 @@ def test_net_status_en_contra_when_negative(
     )
     _create_expense(client, headers, account.id, "-500.00", "2026-03-10", supermercado_id)
 
-    response = client.get("/api/v1/dashboard/summary", params={"year": 2026, "month": 3}, headers=headers)
+    response = client.get(
+        "/api/v1/dashboard/summary", params={"year": 2026, "month": 3}, headers=headers
+    )
     body = response.json()
     assert body["net_total"] == "-400.00"
     assert body["net_status"] == "en_contra"
@@ -97,7 +99,9 @@ def test_by_category_rolls_up_to_root_and_includes_uncategorized(
     # sin categoría explícita y sin regla que aplique -> Finanzas y Otros / Sin Clasificar
     _create_expense(client, headers, account.id, "-5.00", "2026-03-04", None)
 
-    response = client.get("/api/v1/dashboard/summary", params={"year": 2026, "month": 3}, headers=headers)
+    response = client.get(
+        "/api/v1/dashboard/summary", params={"year": 2026, "month": 3}, headers=headers
+    )
     body = response.json()
     by_category = {node["category_name"]: node for node in body["by_category"]}
 
@@ -108,7 +112,10 @@ def test_by_category_rolls_up_to_root_and_includes_uncategorized(
     assert by_category["Restauración"]["total"] == "10.00"
     finanzas = by_category["Finanzas y Otros"]
     assert finanzas["total"] == "5.00"
-    assert any(s["category_name"] == "Sin Clasificar" and s["total"] == "5.00" for s in finanzas["subcategories"])
+    assert any(
+        s["category_name"] == "Sin Clasificar" and s["total"] == "5.00"
+        for s in finanzas["subcategories"]
+    )
     assert body["expense_total"] == "65.00"
 
 
@@ -121,7 +128,9 @@ def test_fixed_vs_variable_split(client: TestClient, auth_headers, make_account)
     _create_expense(client, headers, account.id, "-800.00", "2026-03-01", alquiler_id)
     _create_expense(client, headers, account.id, "-100.00", "2026-03-02", supermercado_id)
 
-    response = client.get("/api/v1/dashboard/summary", params={"year": 2026, "month": 3}, headers=headers)
+    response = client.get(
+        "/api/v1/dashboard/summary", params={"year": 2026, "month": 3}, headers=headers
+    )
     body = response.json()
     assert body["fixed_total"] == "800.00"
     assert body["variable_total"] == "100.00"
@@ -135,7 +144,9 @@ def test_incomplete_data_false_for_closed_past_month(
     supermercado_id = _find_category(client, headers, "expense", "Alimentación", "Supermercado")
     _create_expense(client, headers, account.id, "-10.00", "2020-01-01", supermercado_id)
 
-    response = client.get("/api/v1/dashboard/summary", params={"year": 2020, "month": 1}, headers=headers)
+    response = client.get(
+        "/api/v1/dashboard/summary", params={"year": 2020, "month": 1}, headers=headers
+    )
     assert response.json()["incomplete_data"] is False
 
 
@@ -158,9 +169,7 @@ def test_incomplete_data_false_when_recent_movement_exists(
     assert body["last_transaction_date"] == today.isoformat()
 
 
-def test_no_transactions_this_month_is_incomplete(
-    client: TestClient, auth_headers
-) -> None:
+def test_no_transactions_this_month_is_incomplete(client: TestClient, auth_headers) -> None:
     headers, _ = auth_headers()
     today = date.today()
 

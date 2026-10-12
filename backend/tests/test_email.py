@@ -4,18 +4,20 @@ from app.services.email import send_email
 
 
 def test_send_email_noop_without_smtp_host() -> None:
-    with patch("app.services.email.get_settings") as mock_settings, patch(
-        "smtplib.SMTP"
-    ) as mock_smtp:
+    with (
+        patch("app.services.email.get_settings") as mock_settings,
+        patch("smtplib.SMTP") as mock_smtp,
+    ):
         mock_settings.return_value.smtp_host = ""
         send_email("user@example.com", "Asunto", "Cuerpo")
         mock_smtp.assert_not_called()
 
 
 def test_send_email_sends_via_smtp_when_configured() -> None:
-    with patch("app.services.email.get_settings") as mock_settings, patch(
-        "smtplib.SMTP"
-    ) as mock_smtp:
+    with (
+        patch("app.services.email.get_settings") as mock_settings,
+        patch("smtplib.SMTP") as mock_smtp,
+    ):
         mock_settings.return_value.smtp_host = "mailhog"
         mock_settings.return_value.smtp_port = 1025
         mock_settings.return_value.smtp_from = "notificaciones@expensetrack.local"
@@ -32,8 +34,9 @@ def test_send_email_sends_via_smtp_when_configured() -> None:
 
 
 def test_send_email_swallows_connection_errors() -> None:
-    with patch("app.services.email.get_settings") as mock_settings, patch(
-        "smtplib.SMTP", side_effect=OSError("conexión rechazada")
+    with (
+        patch("app.services.email.get_settings") as mock_settings,
+        patch("smtplib.SMTP", side_effect=OSError("conexión rechazada")),
     ):
         mock_settings.return_value.smtp_host = "mailhog"
         mock_settings.return_value.smtp_port = 1025

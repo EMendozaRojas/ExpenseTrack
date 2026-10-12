@@ -104,7 +104,10 @@ export function InsightsPage() {
         )}
         <div className="recurring-list">
           {visibleSeries.map((series) => (
-            <div key={series.key} className={`recurring-card ${series.dismissed ? "recurring-card-dismissed" : ""}`}>
+            <div
+              key={series.key}
+              className={`recurring-card ${series.dismissed ? "recurring-card-dismissed" : ""}`}
+            >
               <div className="recurring-card-main">
                 <span className="recurring-card-label">{series.label}</span>
                 <span className="page-status">
@@ -151,8 +154,8 @@ export function InsightsPage() {
         {settings && (
           <p className="page-status">
             Movimientos de hasta {formatCurrency(Number(settings.ant_max_amount))}, con al menos{" "}
-            {settings.ant_min_occurrences} ocurrencias y {formatCurrency(Number(settings.ant_min_aggregate))}{" "}
-            acumulados en el mes.
+            {settings.ant_min_occurrences} ocurrencias y{" "}
+            {formatCurrency(Number(settings.ant_min_aggregate))} acumulados en el mes.
           </p>
         )}
 
@@ -204,9 +207,7 @@ export function InsightsPage() {
             })}
           </div>
         )}
-        <p className="page-hint">
-          Los umbrales de "gasto hormiga" se ajustan desde Configuración.
-        </p>
+        <p className="page-hint">Los umbrales de "gasto hormiga" se ajustan desde Configuración.</p>
       </section>
     </div>
   );

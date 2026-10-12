@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { authorizedFetch } from "../../api/client";
 import * as api from "./api";
 import { AuthProvider } from "./AuthContext";
 import { useAuth } from "./useAuth";
@@ -115,5 +116,59 @@ describe("AuthContext", () => {
 
     expect(api.logoutRequest).toHaveBeenCalledWith("refresh-1");
     expect(localStorage.getItem("expensetrack_refresh_token")).toBeNull();
+  });
+
+  it("al caducar el token lo renueva con el refresh token y guarda los nuevos", async () => {
+    localStorage.setItem("expensetrack_token", "token-caducado");
+    localStorage.setItem("expensetrack_refresh_token", "refresh-viejo");
+    vi.mocked(api.fetchCurrentUser).mockResolvedValue(demoUser);
+    vi.mocked(api.refreshRequest).mockResolvedValue({
+      access_token: "token-nuevo",
+      refresh_token: "refresh-nuevo",
+      token_type: "bearer",
+    });
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 401, json: async () => ({}) })
+      .mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({}) });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    let status = 0;
+    await act(async () => {
+      status = (await authorizedFetch("/api/v1/accounts/", "token-caducado")).status;
+    });
+
+    expect(status).toBe(200);
+    expect(api.refreshRequest).toHaveBeenCalledWith("refresh-viejo");
+    expect(localStorage.getItem("expensetrack_token")).toBe("token-nuevo");
+    expect(localStorage.getItem("expensetrack_refresh_token")).toBe("refresh-nuevo");
+    expect(result.current.token).toBe("token-nuevo");
+    vi.unstubAllGlobals();
+  });
+
+  it("si el refresh token ya no vale, cierra la sesión", async () => {
+    localStorage.setItem("expensetrack_token", "token-caducado");
+    localStorage.setItem("expensetrack_refresh_token", "refresh-revocado");
+    vi.mocked(api.fetchCurrentUser).mockResolvedValue(demoUser);
+    vi.mocked(api.refreshRequest).mockRejectedValue(new Error("401"));
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({ ok: false, status: 401, json: async () => ({}) }),
+    );
+
+    const { result } = renderHook(() => useAuth(), { wrapper: AuthProvider });
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    await act(async () => {
+      await authorizedFetch("/api/v1/accounts/", "token-caducado");
+    });
+
+    expect(result.current.token).toBeNull();
+    expect(result.current.user).toBeNull();
+    expect(localStorage.getItem("expensetrack_refresh_token")).toBeNull();
+    vi.unstubAllGlobals();
   });
 });

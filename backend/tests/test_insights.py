@@ -88,7 +88,13 @@ def test_recurring_series_with_irregular_amount_not_detected(
     for months_ago, amount in enumerate(amounts):
         posted = today.replace(day=1) - timedelta(days=30 * months_ago)
         _create_expense(
-            client, headers, account.id, amount, posted.isoformat(), supermercado_id, note="MERCADONA VARIABLE"
+            client,
+            headers,
+            account.id,
+            amount,
+            posted.isoformat(),
+            supermercado_id,
+            note="MERCADONA VARIABLE",
         )
 
     body = client.get("/api/v1/insights/recurring", headers=headers).json()
@@ -112,14 +118,18 @@ def test_dismiss_and_restore_recurring_series(
     series = client.get("/api/v1/insights/recurring", headers=headers).json()
     key = next(s for s in series if "NETFLIX" in s["label"])["key"]
 
-    dismiss = client.post("/api/v1/insights/recurring/dismiss", json={"series_key": key}, headers=headers)
+    dismiss = client.post(
+        "/api/v1/insights/recurring/dismiss", json={"series_key": key}, headers=headers
+    )
     assert dismiss.status_code == 204
 
     after_dismiss = client.get("/api/v1/insights/recurring", headers=headers).json()
     netflix = next(s for s in after_dismiss if s["key"] == key)
     assert netflix["dismissed"] is True
 
-    restore = client.post("/api/v1/insights/recurring/restore", json={"series_key": key}, headers=headers)
+    restore = client.post(
+        "/api/v1/insights/recurring/restore", json={"series_key": key}, headers=headers
+    )
     assert restore.status_code == 204
 
     after_restore = client.get("/api/v1/insights/recurring", headers=headers).json()
@@ -137,7 +147,9 @@ def test_ant_spending_detects_frequent_small_expenses(
     for day in range(1, 10):
         _create_expense(client, headers, account.id, "-3.50", f"2026-03-{day:02d}", cafeterias_id)
 
-    response = client.get("/api/v1/insights/ant-spending", params={"year": 2026, "month": 3}, headers=headers)
+    response = client.get(
+        "/api/v1/insights/ant-spending", params={"year": 2026, "month": 3}, headers=headers
+    )
     assert response.status_code == 200
     body = response.json()
     assert len(body) == 1
@@ -170,7 +182,9 @@ def test_ant_spending_ignores_large_transactions(
     supermercado_id = _find_category(client, headers, "expense", "Alimentación", "Supermercado")
 
     for day in range(1, 6):
-        _create_expense(client, headers, account.id, "-50.00", f"2026-03-{day:02d}", supermercado_id)
+        _create_expense(
+            client, headers, account.id, "-50.00", f"2026-03-{day:02d}", supermercado_id
+        )
 
     body = client.get(
         "/api/v1/insights/ant-spending", params={"year": 2026, "month": 3}, headers=headers

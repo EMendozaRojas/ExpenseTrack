@@ -3,6 +3,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.limits import MAX_AMOUNT
+
 Status = Literal["ok", "warning", "exceeded"]
 Source = Literal["series", "override", "single"]
 Scope = Literal["this", "following"]
@@ -16,15 +18,15 @@ def _positive(value: Decimal) -> Decimal:
 
 
 class BudgetCreate(BaseModel):
-    category_id: int = Field(
-        description="Categoría de gasto, raíz o subcategoría.", examples=[95]
-    )
+    category_id: int = Field(description="Categoría de gasto, raíz o subcategoría.", examples=[95])
     year: int = Field(ge=2000, le=2100, description="Año del primer mes.", examples=[2026])
     month: int = Field(
         ge=1, le=12, description="Primer mes (1–12): el actual o uno futuro.", examples=[10]
     )
     amount: Decimal = Field(
-        description="Tope mensual, mayor que cero, en la moneda base.", examples=["300.00"]
+        lt=MAX_AMOUNT,
+        description="Tope mensual, mayor que cero, en la moneda base.",
+        examples=["300.00"],
     )
     repeat: bool = Field(
         default=True,
@@ -39,7 +41,9 @@ class BudgetCreate(BaseModel):
 
 
 class BudgetUpdate(BaseModel):
-    amount: Decimal = Field(description="Nuevo tope, mayor que cero.", examples=["350.00"])
+    amount: Decimal = Field(
+        lt=MAX_AMOUNT, description="Nuevo tope, mayor que cero.", examples=["350.00"]
+    )
     scope: Scope = Field(
         default="this",
         description="Si se repite: `this` (solo este mes) o `following` (este mes y los "
@@ -107,7 +111,9 @@ class CopyPreviewItem(BaseModel):
 
 class CopyItem(BaseModel):
     category_id: int = Field(description="Categoría a copiar.", examples=[98])
-    amount: Decimal = Field(description="Monto para el nuevo mes.", examples=["150.00"])
+    amount: Decimal = Field(
+        lt=MAX_AMOUNT, description="Monto para el nuevo mes.", examples=["150.00"]
+    )
 
     @field_validator("amount")
     @classmethod

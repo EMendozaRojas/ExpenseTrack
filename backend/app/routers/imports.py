@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, UploadFile, status
@@ -52,7 +52,9 @@ def _get_owned_batch(db: Session, batch_id: int, current_user: User) -> ImportBa
         .first()
     )
     if batch is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Importación no encontrada")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Importación no encontrada"
+        )
     return batch
 
 
@@ -132,18 +134,20 @@ async def upload_statement(
     content = await file.read()
     if len(content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="El archivo supera el límite de 5 MB",
         )
 
     try:
         parsed_rows = parse_csv(content)
     except StatementParseError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=str(exc)
+        ) from exc
 
     if len(parsed_rows) > MAX_ROWS:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=f"El archivo supera el límite de {MAX_ROWS} filas",
         )
 
@@ -180,7 +184,9 @@ async def upload_statement(
     db.flush()
 
     for parsed in parsed_rows:
-        row_hash = external_hash(account.id, parsed.posted_at, parsed.amount, parsed.raw_description)
+        row_hash = external_hash(
+            account.id, parsed.posted_at, parsed.amount, parsed.raw_description
+        )
         matched = existing_by_hash.get(row_hash)
         if matched is not None:
             classification, matched_id = "EXACT_DUPLICATE", matched.id
@@ -277,7 +283,7 @@ def commit_import(
 
     rows = db.query(ImportRow).filter(ImportRow.batch_id == batch.id).all()
     row_ids = set(payload.row_ids)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     replaced_count = 0
 
     if payload.strategy == "replace_range":

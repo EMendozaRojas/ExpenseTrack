@@ -21,4 +21,6 @@ class DismissedRecurringSeries(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     series_key: Mapped[str] = mapped_column(String(300), nullable=False)
-    dismissed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    dismissed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )

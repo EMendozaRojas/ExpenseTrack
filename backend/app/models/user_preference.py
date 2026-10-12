@@ -21,7 +21,9 @@ class UserPreferences(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), unique=True, nullable=False)
-    base_currency: Mapped[str] = mapped_column(String(3), nullable=False, default=DEFAULT_BASE_CURRENCY)
+    base_currency: Mapped[str] = mapped_column(
+        String(3), nullable=False, default=DEFAULT_BASE_CURRENCY
+    )
     locale: Mapped[str] = mapped_column(String(10), nullable=False, default=DEFAULT_LOCALE)
     ant_max_amount: Mapped[Decimal] = mapped_column(
         Numeric(14, 2), nullable=False, default=DEFAULT_ANT_MAX_AMOUNT

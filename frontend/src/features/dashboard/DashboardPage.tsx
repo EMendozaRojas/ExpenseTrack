@@ -61,11 +61,7 @@ export function DashboardPage() {
   return (
     <div className="dashboard-page">
       <div className="dashboard-toolbar">
-        <MonthNavigator
-          year={year}
-          month={month}
-          onChange={handleMonthChange}
-        />
+        <MonthNavigator year={year} month={month} onChange={handleMonthChange} />
 
         {accounts.length > 1 && (
           <select
@@ -111,9 +107,7 @@ export function DashboardPage() {
               icon="⬇️"
               accent="expense"
             />
-            <div
-              className={`stat-card dashboard-net dashboard-net-${summary.net_status}`}
-            >
+            <div className={`stat-card dashboard-net dashboard-net-${summary.net_status}`}>
               <span
                 className="stat-card-icon"
                 aria-hidden="true"
@@ -183,27 +177,27 @@ export function DashboardPage() {
               <div className="category-breakdown">
                 <CategoryDonutChart data={summary.by_category} />
                 <div className="category-tree">
-                {summary.by_category.map((node) => (
-                  <details key={node.category_id} className="category-tree-root">
-                    <summary>
-                      <span className="category-tree-name">
-                        {node.icon ? `${node.icon} ` : ""}
-                        {node.category_name}
-                      </span>
-                      <span className="category-tree-total">
-                        {formatCurrency(Number(node.total))}
-                      </span>
-                    </summary>
-                    <ul>
-                      {node.subcategories.map((sub) => (
-                        <li key={sub.category_id} className="category-tree-sub">
-                          <span>{sub.category_name}</span>
-                          <span>{formatCurrency(Number(sub.total))}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                ))}
+                  {summary.by_category.map((node) => (
+                    <details key={node.category_id} className="category-tree-root">
+                      <summary>
+                        <span className="category-tree-name">
+                          {node.icon ? `${node.icon} ` : ""}
+                          {node.category_name}
+                        </span>
+                        <span className="category-tree-total">
+                          {formatCurrency(Number(node.total))}
+                        </span>
+                      </summary>
+                      <ul>
+                        {node.subcategories.map((sub) => (
+                          <li key={sub.category_id} className="category-tree-sub">
+                            <span>{sub.category_name}</span>
+                            <span>{formatCurrency(Number(sub.total))}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  ))}
                 </div>
               </div>
             )}

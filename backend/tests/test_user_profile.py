@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+PNG = b"\x89PNG\r\n\x1a\n"  # firma real de un PNG: el contenido se comprueba al subir
+
 
 def test_new_user_has_no_name_or_avatar(client: TestClient, auth_headers) -> None:
     headers, _ = auth_headers()
@@ -35,14 +37,14 @@ def test_upload_view_and_delete_avatar(client: TestClient, auth_headers) -> None
     upload = client.post(
         "/api/v1/users/me/avatar",
         headers=headers,
-        files={"file": ("avatar.png", b"\x89PNG\r\n fake png bytes", "image/png")},
+        files={"file": ("avatar.png", PNG + b" fake png bytes", "image/png")},
     )
     assert upload.status_code == 201
     assert upload.json()["has_avatar"] is True
 
     view = client.get("/api/v1/users/me/avatar", headers=headers)
     assert view.status_code == 200
-    assert view.content == b"\x89PNG\r\n fake png bytes"
+    assert view.content == PNG + b" fake png bytes"
     assert view.headers["content-type"] == "image/png"
 
     deleted = client.delete("/api/v1/users/me/avatar", headers=headers)
@@ -61,16 +63,16 @@ def test_uploading_new_avatar_replaces_old_one(client: TestClient, auth_headers)
     client.post(
         "/api/v1/users/me/avatar",
         headers=headers,
-        files={"file": ("first.png", b"first bytes", "image/png")},
+        files={"file": ("first.png", PNG + b"first bytes", "image/png")},
     )
     client.post(
         "/api/v1/users/me/avatar",
         headers=headers,
-        files={"file": ("second.png", b"second bytes", "image/png")},
+        files={"file": ("second.png", PNG + b"second bytes", "image/png")},
     )
 
     view = client.get("/api/v1/users/me/avatar", headers=headers)
-    assert view.content == b"second bytes"
+    assert view.content == PNG + b"second bytes"
 
 
 def test_avatar_rejects_unsupported_mime_type(client: TestClient, auth_headers) -> None:
@@ -103,7 +105,7 @@ def test_avatar_is_isolated_between_users(client: TestClient, auth_headers) -> N
     client.post(
         "/api/v1/users/me/avatar",
         headers=headers_a,
-        files={"file": ("avatar.png", b"avatar de a", "image/png")},
+        files={"file": ("avatar.png", PNG + b"avatar de a", "image/png")},
     )
 
     view_b = client.get("/api/v1/users/me/avatar", headers=headers_b)

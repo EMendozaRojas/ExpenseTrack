@@ -37,7 +37,8 @@ export function AttachmentsPanel({ transactionId }: AttachmentsPanelProps) {
 
   const deleteMutation = useMutation({
     mutationFn: (attachmentId: number) => deleteAttachment(token as string, attachmentId),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["attachments", transactionId] }),
+    onSuccess: () =>
+      void queryClient.invalidateQueries({ queryKey: ["attachments", transactionId] }),
   });
 
   async function handleView(attachmentId: number) {

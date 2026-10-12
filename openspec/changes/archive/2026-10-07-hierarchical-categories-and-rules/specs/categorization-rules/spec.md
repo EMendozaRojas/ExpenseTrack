@@ -55,4 +55,3 @@ The system SHALL allow the user to assign a single subcategory to a set of their
 #### Scenario: Bulk categorize ignores ids the user does not own
 - **WHEN** the submitted list includes transaction ids owned by another user
 - **THEN** the system updates only the caller's transactions and does not reveal the others
-

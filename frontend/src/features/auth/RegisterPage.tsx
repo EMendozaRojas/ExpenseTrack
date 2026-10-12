@@ -8,6 +8,7 @@ import { googleLoginUrl } from "./api";
 import { useAuth } from "./useAuth";
 
 const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_BYTES = 72;
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -29,6 +30,13 @@ export function RegisterPage() {
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       setValidationError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
+      return;
+    }
+    // bcrypt solo usa 72 bytes: se cuentan bytes, no caracteres (la ñ ocupa 2).
+    if (new TextEncoder().encode(password).length > MAX_PASSWORD_BYTES) {
+      setValidationError(
+        `La contraseña puede tener como máximo ${MAX_PASSWORD_BYTES} bytes (las letras con acento o la ñ cuentan doble).`,
+      );
       return;
     }
     if (password !== confirmPassword) {
@@ -95,9 +103,7 @@ export function RegisterPage() {
             </option>
           ))}
         </select>
-        <p className="form-hint">
-          Podrás cambiarla más adelante desde Configuración.
-        </p>
+        <p className="form-hint">Podrás cambiarla más adelante desde Configuración.</p>
 
         {errorMessage && (
           <p role="alert" className="form-error">
