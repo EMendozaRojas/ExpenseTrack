@@ -50,7 +50,7 @@ async def data_error_handler(request: Request, exc: DataError) -> JSONResponse:
     tamaño o formato, es un dato inválido (422), no un fallo del servidor.
     Los schemas ya acotan los campos; esto cubre lo que se escape."""
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content={
             "detail": "Los datos no son válidos: algún valor es demasiado largo o está "
             "fuera de rango"

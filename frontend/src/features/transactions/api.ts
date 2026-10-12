@@ -55,10 +55,7 @@ export function listExpensesByCategory(
   );
 }
 
-export function createTransaction(
-  token: string,
-  payload: TransactionInput,
-): Promise<Transaction> {
+export function createTransaction(token: string, payload: TransactionInput): Promise<Transaction> {
   return apiFetch<Transaction>("/transactions/", token, {
     method: "POST",
     body: JSON.stringify(payload),

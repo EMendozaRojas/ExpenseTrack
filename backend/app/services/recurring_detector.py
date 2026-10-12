@@ -66,7 +66,7 @@ def detect_recurring_series(transactions: list[Transaction]) -> list[RecurringSe
 
         txs_sorted = sorted(txs, key=lambda t: t.posted_at)
         amounts = [abs(t.amount) for t in txs_sorted]
-        avg_amount = sum(amounts) / len(amounts)
+        avg_amount = sum(amounts, Decimal(0)) / len(amounts)
         if avg_amount <= 0:
             continue
         if any(abs(a - avg_amount) / avg_amount > AMOUNT_TOLERANCE_PCT for a in amounts):

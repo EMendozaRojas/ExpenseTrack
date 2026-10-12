@@ -11,7 +11,11 @@ def _find_category(
 
 
 def _upload(
-    client: TestClient, headers: dict[str, str], account_id: int, csv_text: str, filename: str = "extracto.csv"
+    client: TestClient,
+    headers: dict[str, str],
+    account_id: int,
+    csv_text: str,
+    filename: str = "extracto.csv",
 ):
     return client.post(
         "/api/v1/imports/",

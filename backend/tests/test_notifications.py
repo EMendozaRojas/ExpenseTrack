@@ -4,7 +4,11 @@ from fastapi.testclient import TestClient
 
 
 def _find_category(
-    client: TestClient, headers: dict[str, str], kind: str, root_name: str, sub_name: str | None = None
+    client: TestClient,
+    headers: dict[str, str],
+    kind: str,
+    root_name: str,
+    sub_name: str | None = None,
 ) -> int:
     roots = client.get("/api/v1/categories/", params={"kind": kind}, headers=headers).json()
     root = next(r for r in roots if r["name"] == root_name)
@@ -37,9 +41,7 @@ def test_budget_warning_notification_created_when_crossing_80_pct(
     account = make_account(user)
     category_id = _find_category(client, headers, "expense", "Alimentación", "Supermercado")
 
-    client.post(
-        "/api/v1/budgets/", json=_budget_payload(category_id, "100.00"), headers=headers
-    )
+    client.post("/api/v1/budgets/", json=_budget_payload(category_id, "100.00"), headers=headers)
 
     today = date.today().isoformat()
     response = client.post(
@@ -71,9 +73,7 @@ def test_budget_exceeded_replaces_does_not_duplicate_warning(
     account = make_account(user)
     category_id = _find_category(client, headers, "expense", "Alimentación", "Supermercado")
 
-    client.post(
-        "/api/v1/budgets/", json=_budget_payload(category_id, "100.00"), headers=headers
-    )
+    client.post("/api/v1/budgets/", json=_budget_payload(category_id, "100.00"), headers=headers)
 
     today = date.today().isoformat()
     client.post(
@@ -148,13 +148,13 @@ def test_goal_near_and_reached_notifications(client: TestClient, auth_headers) -
     assert types == {"goal_near", "goal_reached"}
 
 
-def test_mark_notification_read_and_read_all(client: TestClient, auth_headers, make_account) -> None:
+def test_mark_notification_read_and_read_all(
+    client: TestClient, auth_headers, make_account
+) -> None:
     headers, user = auth_headers()
     account = make_account(user)
     category_id = _find_category(client, headers, "expense", "Alimentación", "Supermercado")
-    client.post(
-        "/api/v1/budgets/", json=_budget_payload(category_id, "100.00"), headers=headers
-    )
+    client.post("/api/v1/budgets/", json=_budget_payload(category_id, "100.00"), headers=headers)
     client.post(
         "/api/v1/transactions/",
         json={
@@ -180,14 +180,14 @@ def test_mark_notification_read_and_read_all(client: TestClient, auth_headers, m
     assert mark_all.status_code == 204
 
 
-def test_notifications_isolated_between_users(client: TestClient, auth_headers, make_account) -> None:
+def test_notifications_isolated_between_users(
+    client: TestClient, auth_headers, make_account
+) -> None:
     headers_a, user_a = auth_headers()
     headers_b, _ = auth_headers()
     account = make_account(user_a)
     category_id = _find_category(client, headers_a, "expense", "Alimentación", "Supermercado")
-    client.post(
-        "/api/v1/budgets/", json=_budget_payload(category_id, "100.00"), headers=headers_a
-    )
+    client.post("/api/v1/budgets/", json=_budget_payload(category_id, "100.00"), headers=headers_a)
     client.post(
         "/api/v1/transactions/",
         json={
@@ -430,7 +430,8 @@ def test_month_summary_created_once(
     client.post("/api/v1/notifications/check", headers=headers)
 
     summaries = [
-        n for n in client.get("/api/v1/notifications/", headers=headers).json()
+        n
+        for n in client.get("/api/v1/notifications/", headers=headers).json()
         if n["type"] == "budget_month_summary"
     ]
     assert len(summaries) == 1

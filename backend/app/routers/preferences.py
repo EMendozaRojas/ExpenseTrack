@@ -80,7 +80,8 @@ def update_preferences(
         if _has_transactions(db, current_user):
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="No puedes cambiar la moneda principal porque ya tienes movimientos registrados.",
+                detail="No puedes cambiar la moneda principal porque ya tienes movimientos "
+                "registrados.",
             )
         preferences.base_currency = payload.base_currency
     if payload.locale is not None:

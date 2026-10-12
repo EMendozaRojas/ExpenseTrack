@@ -138,7 +138,8 @@ function AntSpendingSettingsSection() {
             onChange={(event) =>
               setDraft({
                 ant_max_amount: event.target.value,
-                ant_min_occurrences: draft?.ant_min_occurrences ?? String(settings.ant_min_occurrences),
+                ant_min_occurrences:
+                  draft?.ant_min_occurrences ?? String(settings.ant_min_occurrences),
                 ant_min_aggregate: draft?.ant_min_aggregate ?? settings.ant_min_aggregate,
               })
             }
@@ -169,7 +170,8 @@ function AntSpendingSettingsSection() {
             onChange={(event) =>
               setDraft({
                 ant_max_amount: draft?.ant_max_amount ?? settings.ant_max_amount,
-                ant_min_occurrences: draft?.ant_min_occurrences ?? String(settings.ant_min_occurrences),
+                ant_min_occurrences:
+                  draft?.ant_min_occurrences ?? String(settings.ant_min_occurrences),
                 ant_min_aggregate: event.target.value,
               })
             }
@@ -210,7 +212,8 @@ export function PreferencesPage() {
   }, [preferencesQuery.data, selectedCurrency]);
 
   const mutation = useMutation({
-    mutationFn: (currency: string) => updatePreferences(token as string, { base_currency: currency }),
+    mutationFn: (currency: string) =>
+      updatePreferences(token as string, { base_currency: currency }),
     onSuccess: (updated) => {
       setSelectedCurrency(updated.base_currency);
       setPendingCurrency(null);

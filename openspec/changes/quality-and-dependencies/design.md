@@ -31,7 +31,7 @@
 ## Risks / Trade-offs
 
 - [Salto grande de FastAPI] → cubierto por los 194 tests del backend (HTTP contra Postgres real) y el snapshot de OpenAPI.
-- [Diff de formato grande] → va en el mismo commit que la limpieza y sin cambios de lógica, para que se pueda revisar aparte.
+- [Diff de formato grande] → el formato no cambia la lógica; los cambios que sí la tocan (PyJWT, constantes HTTP, tipos) se enumeran en el mensaje del commit.
 
 ## Migration Plan
 

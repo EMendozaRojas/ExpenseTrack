@@ -14,11 +14,11 @@
 
 ## 3. Hooks y CI
 
-- [ ] 3.1 `.pre-commit-config.yaml`: mypy, ESLint y Prettier vía `docker compose exec`; excluir `Design System/` del límite de tamaño
-- [ ] 3.2 `.github/workflows/ci.yml` con los jobs de backend y frontend
-- [ ] 3.3 README y `BUENAS_PRACTICAS.md`: cómo instalar los hooks y qué comprueba el CI
+- [x] 3.1 `.pre-commit-config.yaml`: mypy, ESLint y Prettier vía `docker compose exec`; excluir `Design System/` del límite de tamaño
+- [x] 3.2 `.github/workflows/ci.yml` con los jobs de backend y frontend
+- [x] 3.3 README y `BUENAS_PRACTICAS.md`: cómo instalar los hooks y qué comprueba el CI
 
 ## 4. Verificación
 
-- [ ] 4.1 `pre-commit run --all-files` equivalente en verde (ruff, formato, mypy, ESLint, Prettier, pytest, vitest, build)
+- [x] 4.1 `pre-commit run --all-files` equivalente en verde (ruff, formato, mypy, ESLint, Prettier, pytest, vitest, build)
 - [ ] 4.2 La autora instala `pre-commit` y los hooks; el primer push a GitHub muestra el CI en verde

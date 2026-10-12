@@ -51,9 +51,7 @@ def _check_category_visible(db: Session, category_id: int, current_user: User) -
         .first()
     )
     if category is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Categoría no encontrada"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Categoría no encontrada")
 
 
 def _get_owned_rule(db: Session, rule_id: int, current_user: User) -> CategorizationRule:
@@ -108,7 +106,7 @@ def create_rule(
     existentes: para eso, `POST /categorization-rules/{rule_id}/apply`."""
     if payload.match_type not in MATCH_TYPES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="match_type no soportado"
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="match_type no soportado"
         )
     _check_category_visible(db, payload.category_id, current_user)
 
@@ -148,7 +146,7 @@ def update_rule(
     if payload.match_type is not None:
         if payload.match_type not in MATCH_TYPES:
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="match_type no soportado"
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="match_type no soportado"
             )
         rule.match_type = payload.match_type
     if payload.pattern is not None:
@@ -200,7 +198,7 @@ def preview_rule(
     categoría) coincidirían con el patrón, sin crear la regla."""
     if match_type not in MATCH_TYPES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="match_type no soportado"
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="match_type no soportado"
         )
     transactions = (
         db.query(Transaction)

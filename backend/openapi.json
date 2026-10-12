@@ -5853,7 +5853,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "description": "Recibo o documento: JPEG, PNG, WebP o PDF de hasta 10 MB."
           }
@@ -5868,7 +5868,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "description": "Imagen JPEG, PNG o WebP de hasta 5 MB."
           }
@@ -5891,7 +5891,7 @@
           },
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File",
             "description": "Extracto en CSV (hasta 5 MB y 10.000 filas)."
           }
@@ -9110,6 +9110,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",

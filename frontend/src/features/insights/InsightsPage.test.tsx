@@ -82,7 +82,10 @@ describe("InsightsPage", () => {
 
     await user.click(screen.getByRole("button", { name: "Descartar" }));
 
-    expect(insightsApi.dismissRecurringSeries).toHaveBeenCalledWith("test-token", "expense:NETFLIX");
+    expect(insightsApi.dismissRecurringSeries).toHaveBeenCalledWith(
+      "test-token",
+      "expense:NETFLIX",
+    );
   });
 
   it("muestra los movimientos al hacer clic en una categoría de gasto hormiga", async () => {

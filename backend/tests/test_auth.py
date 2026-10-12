@@ -20,7 +20,7 @@ def test_register_login_me(client: TestClient) -> None:
 
 
 def test_token_subject_is_user_id_not_email(client: TestClient) -> None:
-    from jose import jwt
+    import jwt
 
     from app.core.config import get_settings
 

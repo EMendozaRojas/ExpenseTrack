@@ -10,7 +10,7 @@ papelera/restaurar/borrar, igual que otros "creados perezosamente" del
 proyecto (p. ej. `user_preferences`).
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.orm import Session
 
@@ -22,7 +22,7 @@ RETENTION_DAYS = 30
 
 
 def purge_expired_transactions(db: Session) -> int:
-    cutoff = datetime.now(timezone.utc) - timedelta(days=RETENTION_DAYS)
+    cutoff = datetime.now(UTC) - timedelta(days=RETENTION_DAYS)
     expired = (
         db.query(Transaction)
         .filter(Transaction.deleted_at.isnot(None), Transaction.deleted_at < cutoff)

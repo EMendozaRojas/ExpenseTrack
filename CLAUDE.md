@@ -37,7 +37,7 @@ que se decida explícitamente.
 | Base de datos | PostgreSQL | corre en contenedor Docker |
 | ORM / migraciones | SQLAlchemy + Alembic | estándar de la industria para FastAPI |
 | Gestor de dependencias (Python) | pip + requirements.txt | |
-| Autenticación | JWT (`python-jose`) + hash de contraseñas (`passlib`/`bcrypt`) + login social con Google (OAuth) y refresh tokens | multiusuario desde el inicio |
+| Autenticación | JWT (`PyJWT`) + hash de contraseñas (`passlib`/`bcrypt`) + login social con Google (OAuth) y refresh tokens | multiusuario desde el inicio |
 | Orquestación local | Docker Compose | levanta frontend, backend y db juntos; solo local por ahora, sin despliegue previsto |
 | Tests backend | pytest | 20 módulos de test (auth, cuentas, movimientos, presupuestos, metas, notificaciones, multi-moneda, adjuntos, importaciones, insights, dashboard, login social, reglas, documentación de la API...) |
 | Tests frontend | Vitest + React Testing Library | con reporte de cobertura (`vitest --coverage`) |

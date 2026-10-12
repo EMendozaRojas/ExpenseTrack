@@ -36,7 +36,9 @@ def _to_read(db: Session, account: Account) -> AccountRead:
     )
 
 
-def _clear_other_primary_accounts(db: Session, current_user: User, except_account_id: int | None) -> None:
+def _clear_other_primary_accounts(
+    db: Session, current_user: User, except_account_id: int | None
+) -> None:
     query = db.query(Account).filter(
         Account.owner_id == current_user.id, Account.is_primary.is_(True)
     )

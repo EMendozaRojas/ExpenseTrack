@@ -14,9 +14,18 @@ Reemplaza la taxonomía anterior (ver migración
 from dataclasses import dataclass, field
 
 _PALETTE = [
-    "#4F86C6", "#E4572E", "#76B041", "#F3A712", "#8E7CC3",
-    "#48A9A6", "#D64550", "#3E92CC", "#6A994E", "#B56576",
-    "#457B9D", "#E07A5F",
+    "#4F86C6",
+    "#E4572E",
+    "#76B041",
+    "#F3A712",
+    "#8E7CC3",
+    "#48A9A6",
+    "#D64550",
+    "#3E92CC",
+    "#6A994E",
+    "#B56576",
+    "#457B9D",
+    "#E07A5F",
 ]
 
 
@@ -40,61 +49,129 @@ UNCATEGORIZED_EXPENSE = ("Finanzas y Otros", "Sin Clasificar")
 UNCATEGORIZED_INCOME = ("Otros ingresos", "Sin clasificar")
 
 EXPENSE_ROOTS: list[SeedRoot] = [
-    SeedRoot("Alimentación", "🛒", [
-        SeedSub("Supermercado"),
-    ]),
-    SeedRoot("Restauración", "🍽️", [
-        SeedSub("Restaurantes"), SeedSub("Cafeterías"), SeedSub("Delivery"), SeedSub("Bares/Copas"),
-    ]),
-    SeedRoot("Vivienda", "🏠", [
-        SeedSub("Alquiler/Hipoteca", is_fixed=True),
-        SeedSub("Suministros (Luz/Agua/Gas)", is_fixed=True),
-        SeedSub("Internet/Móvil", is_fixed=True),
-        SeedSub("Mantenimiento"),
-    ]),
-    SeedRoot("Transporte", "🚌", [
-        SeedSub("Combustible"), SeedSub("Transporte Público"), SeedSub("Taxi/VTC"),
-        SeedSub("Mantenimiento/Parking"),
-    ]),
-    SeedRoot("Compras y Personal", "🛍️", [
-        SeedSub("Ropa y Calzado"), SeedSub("Tecnología"), SeedSub("Hogar"), SeedSub("Cuidado Personal"),
-    ]),
-    SeedRoot("Suscripciones", "🔁", [
-        SeedSub("Streaming", is_fixed=True),
-        SeedSub("Software", is_fixed=True),
-        SeedSub("Gimnasio", is_fixed=True),
-        SeedSub("Servicios Recurrentes", is_fixed=True),
-    ]),
-    SeedRoot("Ocio", "🎬", [
-        SeedSub("Cine/Eventos"), SeedSub("Viajes/Hoteles"), SeedSub("Juegos/Aficiones"),
-    ]),
-    SeedRoot("Salud", "💊", [
-        SeedSub("Farmacia"), SeedSub("Médicos/Dentista"),
-    ]),
-    SeedRoot("Familia y Mascotas", "👨‍👩‍👧", [
-        SeedSub("Educación", is_fixed=True),
-        SeedSub("Mascotas"),
-        SeedSub("Guardería/Colegio", is_fixed=True),
-    ]),
-    SeedRoot("Finanzas y Otros", "🏦", [
-        SeedSub("Comisiones", is_fixed=True),
-        SeedSub("Impuestos", is_fixed=True),
-        SeedSub("Sin Clasificar"),
-    ]),
+    SeedRoot(
+        "Alimentación",
+        "🛒",
+        [
+            SeedSub("Supermercado"),
+        ],
+    ),
+    SeedRoot(
+        "Restauración",
+        "🍽️",
+        [
+            SeedSub("Restaurantes"),
+            SeedSub("Cafeterías"),
+            SeedSub("Delivery"),
+            SeedSub("Bares/Copas"),
+        ],
+    ),
+    SeedRoot(
+        "Vivienda",
+        "🏠",
+        [
+            SeedSub("Alquiler/Hipoteca", is_fixed=True),
+            SeedSub("Suministros (Luz/Agua/Gas)", is_fixed=True),
+            SeedSub("Internet/Móvil", is_fixed=True),
+            SeedSub("Mantenimiento"),
+        ],
+    ),
+    SeedRoot(
+        "Transporte",
+        "🚌",
+        [
+            SeedSub("Combustible"),
+            SeedSub("Transporte Público"),
+            SeedSub("Taxi/VTC"),
+            SeedSub("Mantenimiento/Parking"),
+        ],
+    ),
+    SeedRoot(
+        "Compras y Personal",
+        "🛍️",
+        [
+            SeedSub("Ropa y Calzado"),
+            SeedSub("Tecnología"),
+            SeedSub("Hogar"),
+            SeedSub("Cuidado Personal"),
+        ],
+    ),
+    SeedRoot(
+        "Suscripciones",
+        "🔁",
+        [
+            SeedSub("Streaming", is_fixed=True),
+            SeedSub("Software", is_fixed=True),
+            SeedSub("Gimnasio", is_fixed=True),
+            SeedSub("Servicios Recurrentes", is_fixed=True),
+        ],
+    ),
+    SeedRoot(
+        "Ocio",
+        "🎬",
+        [
+            SeedSub("Cine/Eventos"),
+            SeedSub("Viajes/Hoteles"),
+            SeedSub("Juegos/Aficiones"),
+        ],
+    ),
+    SeedRoot(
+        "Salud",
+        "💊",
+        [
+            SeedSub("Farmacia"),
+            SeedSub("Médicos/Dentista"),
+        ],
+    ),
+    SeedRoot(
+        "Familia y Mascotas",
+        "👨‍👩‍👧",
+        [
+            SeedSub("Educación", is_fixed=True),
+            SeedSub("Mascotas"),
+            SeedSub("Guardería/Colegio", is_fixed=True),
+        ],
+    ),
+    SeedRoot(
+        "Finanzas y Otros",
+        "🏦",
+        [
+            SeedSub("Comisiones", is_fixed=True),
+            SeedSub("Impuestos", is_fixed=True),
+            SeedSub("Sin Clasificar"),
+        ],
+    ),
 ]
 
 INCOME_ROOTS: list[SeedRoot] = [
-    SeedRoot("Nómina y salario", "💼", [
-        SeedSub("Nómina"), SeedSub("Pagas extra"), SeedSub("Bonus"),
-    ]),
+    SeedRoot(
+        "Nómina y salario",
+        "💼",
+        [
+            SeedSub("Nómina"),
+            SeedSub("Pagas extra"),
+            SeedSub("Bonus"),
+        ],
+    ),
     SeedRoot("Trabajo autónomo", "🧾", [SeedSub("Facturas a clientes")]),
-    SeedRoot("Rendimientos", "📈", [
-        SeedSub("Intereses"), SeedSub("Dividendos"), SeedSub("Alquileres cobrados"),
-    ]),
-    SeedRoot("Reembolsos", "↩️", [
-        SeedSub("Devoluciones de compras"), SeedSub("Devolución de Hacienda"),
-        SeedSub("Gastos compartidos"),
-    ]),
+    SeedRoot(
+        "Rendimientos",
+        "📈",
+        [
+            SeedSub("Intereses"),
+            SeedSub("Dividendos"),
+            SeedSub("Alquileres cobrados"),
+        ],
+    ),
+    SeedRoot(
+        "Reembolsos",
+        "↩️",
+        [
+            SeedSub("Devoluciones de compras"),
+            SeedSub("Devolución de Hacienda"),
+            SeedSub("Gastos compartidos"),
+        ],
+    ),
     SeedRoot("Ayudas y prestaciones", "🤝", [SeedSub("Subvenciones"), SeedSub("Prestaciones")]),
     SeedRoot("Otros ingresos", "💰", [SeedSub("Regalos recibidos"), SeedSub("Sin clasificar")]),
 ]
@@ -115,10 +192,17 @@ def seed_plan() -> list[tuple[str, SeedRoot, str]]:
 
 # (patrones, categoría raíz, subcategoría) — todas match_type='contains', owner_id NULL
 SYSTEM_RULES: list[tuple[list[str], str, str]] = [
-    (["MERCADONA", "CARREFOUR", "LIDL", "DIA", "ALCAMPO", "EROSKI", "CONSUM"],
-     "Alimentación", "Supermercado"),
+    (
+        ["MERCADONA", "CARREFOUR", "LIDL", "DIA", "ALCAMPO", "EROSKI", "CONSUM"],
+        "Alimentación",
+        "Supermercado",
+    ),
     (["REPSOL", "CEPSA", "GALP", "BP", "SHELL"], "Transporte", "Combustible"),
-    (["NETFLIX", "SPOTIFY", "HBO", "DISNEY", "AMAZON PRIME", "FILMIN"], "Suscripciones", "Streaming"),
+    (
+        ["NETFLIX", "SPOTIFY", "HBO", "DISNEY", "AMAZON PRIME", "FILMIN"],
+        "Suscripciones",
+        "Streaming",
+    ),
     (["EMT", "METRO", "RENFE", "CERCANIAS"], "Transporte", "Transporte Público"),
     (["FARMACIA"], "Salud", "Farmacia"),
     (["GLOVO", "UBER EATS", "JUST EAT", "DELIVEROO"], "Restauración", "Delivery"),

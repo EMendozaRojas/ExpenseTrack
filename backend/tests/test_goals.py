@@ -176,7 +176,9 @@ def test_projection_estimates_date_from_recent_pace(
 
     headers, user = auth_headers()
     goal = client.post(
-        "/api/v1/goals/", json={"name": "Meta con historia", "target_amount": "900.00"}, headers=headers
+        "/api/v1/goals/",
+        json={"name": "Meta con historia", "target_amount": "900.00"},
+        headers=headers,
     ).json()
 
     # forzar que la meta se haya creado hace >3 meses para que el proyector

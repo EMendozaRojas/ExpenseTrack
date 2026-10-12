@@ -74,7 +74,7 @@ ayuda de un asistente de IA, con tests y documentación.
 | Base de datos | PostgreSQL 16, SQLAlchemy + Alembic |
 | Autenticación | JWT, bcrypt, Google OAuth, refresh tokens |
 | Tests | pytest (backend), Vitest + React Testing Library (frontend) |
-| Calidad | Ruff, mypy, ESLint, Prettier |
+| Calidad | Ruff, mypy, ESLint, Prettier, pre-commit, GitHub Actions |
 | Entorno | Docker Compose (frontend, backend, base de datos y Mailhog para el email local) |
 | Planificación | OpenSpec |
 
@@ -135,6 +135,10 @@ docker compose exec frontend npm test     # frontend
 ```
 
 Los tests del backend usan su propia base de datos (`expensetrack_test`), que se crea de cero y se migra en cada ejecución, y no envían emails: no tocan tus datos de desarrollo.
+
+### Calidad
+
+En cada push, [GitHub Actions](.github/workflows/ci.yml) pasa lint, formato, tipos, auditoría de dependencias, tests y build del backend y del frontend. Los mismos checks corren antes de cada commit con [pre-commit](https://pre-commit.com/) (instalación en [`BUENAS_PRACTICAS.md`](./BUENAS_PRACTICAS.md#pre-commit-hooks)).
 
 ## Cómo se trabaja en este proyecto
 

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -237,9 +237,7 @@ def test_pagination_cursor(client: TestClient, auth_headers, make_account) -> No
             headers=headers,
         )
 
-    first_page = client.get(
-        "/api/v1/transactions/", params={"limit": 2}, headers=headers
-    ).json()
+    first_page = client.get("/api/v1/transactions/", params={"limit": 2}, headers=headers).json()
     assert len(first_page["items"]) == 2
     assert first_page["next_cursor"] is not None
 
@@ -406,7 +404,9 @@ def test_restoring_one_transfer_leg_restores_both(
     restore = client.post(f"/api/v1/transactions/{legs[0]['id']}/restore", headers=headers)
     assert restore.status_code == 200
 
-    listed_ids = {item["id"] for item in client.get("/api/v1/transactions/", headers=headers).json()["items"]}
+    listed_ids = {
+        item["id"] for item in client.get("/api/v1/transactions/", headers=headers).json()["items"]
+    }
     assert listed_ids == {legs[0]["id"], legs[1]["id"]}
 
 
@@ -455,7 +455,7 @@ def test_purge_removes_transaction_and_attachment_past_30_days(
 
     client.delete(f"/api/v1/transactions/{created['id']}", headers=headers)
 
-    old_enough = datetime.now(timezone.utc) - timedelta(days=31)
+    old_enough = datetime.now(UTC) - timedelta(days=31)
     db_session.query(Transaction).filter(Transaction.id == created["id"]).update(
         {"deleted_at": old_enough}
     )
@@ -492,7 +492,7 @@ def test_trash_still_lists_transaction_within_30_days(
 
     client.delete(f"/api/v1/transactions/{created['id']}", headers=headers)
 
-    recent = datetime.now(timezone.utc) - timedelta(days=29)
+    recent = datetime.now(UTC) - timedelta(days=29)
     db_session.query(Transaction).filter(Transaction.id == created["id"]).update(
         {"deleted_at": recent}
     )

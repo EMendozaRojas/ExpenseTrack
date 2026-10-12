@@ -187,9 +187,7 @@ def test_no_rule_matches_leaves_uncategorized(
     )
     assert response.json()["category_id"] == sin_clasificar_id
 
-    listed = client.get(
-        "/api/v1/transactions/", params={"category_id": ""}, headers=headers
-    )
+    listed = client.get("/api/v1/transactions/", params={"category_id": ""}, headers=headers)
     assert listed.status_code in (200, 422)
 
 
@@ -215,9 +213,7 @@ def test_manual_category_never_overridden_by_rules(
     assert response.json()["category_id"] == ocio_id
 
 
-def test_preview_and_apply_fill_blanks_only(
-    client: TestClient, auth_headers, make_account
-) -> None:
+def test_preview_and_apply_fill_blanks_only(client: TestClient, auth_headers, make_account) -> None:
     headers, user = auth_headers()
     account = make_account(user)
     ocio_id = _find_category(client, headers, "expense", "Ocio", "Juegos/Aficiones")

@@ -129,9 +129,11 @@ def create_month_summary(db: Session, current_user: User) -> None:
     exceeded = [e for e in evaluations if e.status == "exceeded"]
     body = f"En {month_name} cumpliste {kept} de {total} presupuestos."
     if exceeded:
-        body += " Excedidos: " + ", ".join(
-            f"{e.budget.category_name} ({e.pct:.0f}%)" for e in exceeded
-        ) + "."
+        body += (
+            " Excedidos: "
+            + ", ".join(f"{e.budget.category_name} ({e.pct:.0f}%)" for e in exceeded)
+            + "."
+        )
     _create_if_missing(
         db,
         current_user,
@@ -162,12 +164,9 @@ def check_goal_notifications(db: Session, current_user: User, goal: SavingsGoal)
     if not goal.target_amount:
         return
 
-    current_amount: Decimal = (
-        db.query(func.coalesce(func.sum(GoalContribution.amount), 0))
-        .filter(GoalContribution.goal_id == goal.id)
-        .scalar()
-        or Decimal("0")
-    )
+    current_amount: Decimal = db.query(func.coalesce(func.sum(GoalContribution.amount), 0)).filter(
+        GoalContribution.goal_id == goal.id
+    ).scalar() or Decimal("0")
     pct = float(current_amount / goal.target_amount * 100)
 
     if pct >= 100:
@@ -188,5 +187,6 @@ def check_goal_notifications(db: Session, current_user: User, goal: SavingsGoal)
             goal.id,
             "",
             f"Cerca de tu meta: {goal.name}",
-            f'Vas en {current_amount:.2f} de {goal.target_amount:.2f} en "{goal.name}" ({pct:.0f}%).',
+            f"Vas en {current_amount:.2f} de {goal.target_amount:.2f} "
+            f'en "{goal.name}" ({pct:.0f}%).',
         )

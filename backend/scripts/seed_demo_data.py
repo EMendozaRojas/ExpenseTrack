@@ -13,7 +13,7 @@ Uso:
 """
 
 import random
-from datetime import date, datetime, timedelta, timezone
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 
 from app.auth.security import hash_password
@@ -124,7 +124,14 @@ def seed_transactions(db, account: Account, user: User, cat: dict[str, int]) -> 
         # --- gastos fijos, uno por mes ---
         fixed = [
             ("alquiler", "ALQUILER PISO C/ MAYOR 14", 750, 750, 1, 1),
-            ("suministros", random.choice(["ENDESA ENERGIA", "IBERDROLA CLIENTES", "NATURGY"]), 55, 98, 3, 7),
+            (
+                "suministros",
+                random.choice(["ENDESA ENERGIA", "IBERDROLA CLIENTES", "NATURGY"]),
+                55,
+                98,
+                3,
+                7,
+            ),
             ("internet", random.choice(["MOVISTAR FIBRA", "VODAFONE ESPANA"]), 34, 46, 3, 7),
             ("streaming", "NETFLIX.COM", 12.99, 12.99, 1, 1),
             ("streaming", "SPOTIFY PREMIUM", 9.99, 9.99, 1, 1),
@@ -147,9 +154,27 @@ def seed_transactions(db, account: Account, user: User, cat: dict[str, int]) -> 
 
         # --- gastos variables, varias ocurrencias por mes ---
         variable = [
-            ("supermercado", ["MERCADONA", "CARREFOUR EXPRESS", "DIA MARKET", "LIDL"], 12, 75, (6, 8)),
-            ("restaurantes", ["RESTAURANTE LA TASCA", "GRUPO VIPS", "RESTAURANTE EL HORNO"], 18, 48, (3, 5)),
-            ("cafeterias", ["STARBUCKS", "CAFETERIA CENTRAL", "PANADERIA SAN MIGUEL"], 1.8, 4.5, (6, 9)),
+            (
+                "supermercado",
+                ["MERCADONA", "CARREFOUR EXPRESS", "DIA MARKET", "LIDL"],
+                12,
+                75,
+                (6, 8),
+            ),
+            (
+                "restaurantes",
+                ["RESTAURANTE LA TASCA", "GRUPO VIPS", "RESTAURANTE EL HORNO"],
+                18,
+                48,
+                (3, 5),
+            ),
+            (
+                "cafeterias",
+                ["STARBUCKS", "CAFETERIA CENTRAL", "PANADERIA SAN MIGUEL"],
+                1.8,
+                4.5,
+                (6, 9),
+            ),
             ("delivery", ["GLOVO", "UBER EATS", "JUST EAT"], 14, 32, (2, 3)),
             ("combustible", ["REPSOL", "CEPSA", "SHELL"], 45, 70, (2, 2)),
             ("cine", ["CINES YELMO"], 8, 13, (0, 1)),
@@ -176,7 +201,7 @@ def seed_transactions(db, account: Account, user: User, cat: dict[str, int]) -> 
 
 
 def seed_goals(db, user: User) -> None:
-    created_at = datetime.now(timezone.utc) - timedelta(days=110)
+    created_at = datetime.now(UTC) - timedelta(days=110)
     months = last_n_full_months(3)
 
     goals_plan = [
@@ -242,7 +267,9 @@ def main() -> None:
             "gimnasio": find_category(db, "expense", "Suscripciones", "Gimnasio"),
             "cine": find_category(db, "expense", "Ocio", "Cine/Eventos"),
             "ropa": find_category(db, "expense", "Compras y Personal", "Ropa y Calzado"),
-            "cuidado_personal": find_category(db, "expense", "Compras y Personal", "Cuidado Personal"),
+            "cuidado_personal": find_category(
+                db, "expense", "Compras y Personal", "Cuidado Personal"
+            ),
             "farmacia": find_category(db, "expense", "Salud", "Farmacia"),
             "comisiones": find_category(db, "expense", "Finanzas y Otros", "Comisiones"),
             "nomina": find_category(db, "income", "Nómina y salario", "Nómina"),
@@ -254,8 +281,12 @@ def main() -> None:
                 db.query(SavingsGoal.id).filter(SavingsGoal.owner_id == user.id)
             )
         ).delete(synchronize_session=False)
-        db.query(SavingsGoal).filter(SavingsGoal.owner_id == user.id).delete(synchronize_session=False)
-        db.query(Transaction).filter(Transaction.owner_id == user.id).delete(synchronize_session=False)
+        db.query(SavingsGoal).filter(SavingsGoal.owner_id == user.id).delete(
+            synchronize_session=False
+        )
+        db.query(Transaction).filter(Transaction.owner_id == user.id).delete(
+            synchronize_session=False
+        )
         db.commit()
 
         total_tx = seed_transactions(db, account, user, cat)

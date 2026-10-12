@@ -12,7 +12,7 @@ from typing import Any
 from urllib.parse import urlencode
 
 import httpx
-from jose import JWTError, jwt
+import jwt
 
 from app.core.config import get_settings
 
@@ -38,7 +38,7 @@ def verify_state(state: str) -> bool:
     settings = get_settings()
     try:
         payload = jwt.decode(state, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
-    except JWTError:
+    except jwt.PyJWTError:
         return False
     return bool(payload.get("purpose") == STATE_PURPOSE)
 

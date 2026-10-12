@@ -89,7 +89,11 @@ def parse_csv(content: bytes) -> list[ParsedRow]:
     credit_col = _find_column(header_map, CREDIT_ALIASES)
     desc_col = _find_column(header_map, DESCRIPTION_ALIASES)
 
-    if date_col is None or desc_col is None or (amount_col is None and not (debit_col or credit_col)):
+    if (
+        date_col is None
+        or desc_col is None
+        or (amount_col is None and not (debit_col or credit_col))
+    ):
         raise StatementParseError(
             "No se reconocen las columnas de fecha/importe/descripción de este archivo. "
             "El mapeo manual de columnas todavía no está disponible."

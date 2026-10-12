@@ -33,7 +33,9 @@ class Transaction(Base):
     fx_rate_to_account_currency: Mapped[Decimal | None] = mapped_column(
         Numeric(18, 6), nullable=True
     )
-    amount_in_account_currency: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    amount_in_account_currency: Mapped[Decimal | None] = mapped_column(
+        Numeric(14, 2), nullable=True
+    )
     counterparty: Mapped[str | None] = mapped_column(String(255), nullable=True)
     raw_description: Mapped[str | None] = mapped_column(String(255), nullable=True)
     note: Mapped[str | None] = mapped_column(String(255), nullable=True)

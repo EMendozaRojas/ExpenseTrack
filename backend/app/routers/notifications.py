@@ -21,7 +21,9 @@ def _get_owned_notification(db: Session, notification_id: int, current_user: Use
         .first()
     )
     if notification is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Notificación no encontrada")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Notificación no encontrada"
+        )
     return notification
 
 

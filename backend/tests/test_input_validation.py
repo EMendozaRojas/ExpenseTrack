@@ -2,10 +2,11 @@
 
 from urllib.parse import quote
 
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy.exc import DataError
 
-from app.main import app
+from app.main import data_error_handler
 from app.services.file_signature import detect_mime, safe_filename
 
 PNG = b"\x89PNG\r\n\x1a\n contenido"
@@ -86,15 +87,16 @@ def test_goal_name_longer_than_its_column_is_422(client: TestClient, auth_header
     assert _field_errors(response) == {"name"}
 
 
-def test_database_data_error_is_answered_with_422(client: TestClient) -> None:
-    def broken() -> None:
+def test_database_data_error_is_answered_with_422() -> None:
+    # App mínima con el mismo manejador, para no añadir rutas a la app real.
+    mini_app = FastAPI()
+    mini_app.add_exception_handler(DataError, data_error_handler)  # type: ignore[arg-type]
+
+    @mini_app.get("/boom")
+    def boom() -> None:
         raise DataError("INSERT …", {}, Exception("value too long for type character varying"))
 
-    app.add_api_route("/__test_data_error", broken, methods=["GET"])
-    try:
-        response = client.get("/__test_data_error")
-    finally:
-        app.router.routes = [r for r in app.router.routes if r.path != "/__test_data_error"]
+    response = TestClient(mini_app).get("/boom")
 
     assert response.status_code == 422
     assert "no son válidos" in response.json()["detail"]

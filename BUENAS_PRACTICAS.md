@@ -107,33 +107,40 @@ proyecto de este tamaño.
   2026-10-07; los commits anteriores no lo seguían y se dejan como están.
 - **Pre-commit hooks** (via [pre-commit](https://pre-commit.com/)) que
   corren Ruff, mypy, ESLint y Prettier automáticamente antes de cada
-  commit. **Pendiente de activar:** la configuración existe, pero activarla
-  hoy bloquearía los commits por avisos antiguos de lint y tipos y por el
-  tamaño de las imágenes de `Design System/`. Se activará cuando se
-  resuelva esa deuda; mientras tanto, los checks se corren a mano.
+  commit, y validan que el mensaje siga Conventional Commits. Desde el
+  2026-10-12 el repo está limpio para todos ellos (change
+  `quality-and-dependencies`); ver la sección "Pre-commit hooks".
 - Commits pequeños y con un solo propósito, aunque sea un proyecto de una
   sola persona — así se ve y se practica como se trabaja en equipo.
 
 ## CI y cobertura
 
-- **CI (GitHub Actions):** se deja para más adelante. Mientras tanto, la
-  calidad se comprueba corriendo a mano los tests, Ruff, mypy, ESLint y
-  Prettier (ver la sección de pre-commit, pendiente de activar).
+- **CI (GitHub Actions):** [`.github/workflows/ci.yml`](./.github/workflows/ci.yml)
+  corre en cada push y pull request. Backend: Ruff (lint y formato), mypy,
+  `pip-audit` (vulnerabilidades conocidas en dependencias) y pytest con
+  Postgres y cobertura; como los tests migran una base vacía, también
+  vigila que el proyecto arranque desde cero. Frontend: ESLint, Prettier,
+  Vitest con cobertura y build de producción.
 - **Cobertura mínima de tests: 70%**, medida con `coverage.py` en el
   backend y con el reporte de cobertura de Vitest en el frontend. Es un
   piso, no un objetivo a perseguir con tests superficiales.
 
 ## Pre-commit hooks
 
-Instalación (una sola vez por entorno):
+Instalación (una sola vez por máquina). En Ubuntu, `pre-commit` se instala
+con el gestor de paquetes del sistema:
 
 ```bash
-pip install pre-commit
-pre-commit install
-pre-commit install --hook-type commit-msg
+sudo apt install pre-commit
+pre-commit install --hook-type pre-commit --hook-type commit-msg
 ```
 
-A partir de ahí, cada `git commit` corre automáticamente Ruff (lint +
-formato), mypy, y validación de que el mensaje siga Conventional Commits.
-(Aún no activado en este proyecto: ver "Git y commits".)
+A partir de ahí, cada `git commit` corre automáticamente los checks
+genéricos (espacios, YAML/JSON, archivos grandes, claves privadas), Ruff
+(lint + formato), mypy, ESLint, Prettier y la validación de Conventional
+Commits. mypy, ESLint y Prettier se ejecutan **dentro de los contenedores**
+(`docker compose exec`), porque en el host no hay Node ni las librerías del
+backend: hace falta tener el proyecto levantado (`docker compose up -d`).
+Para pasarlos sobre todo el repo: `pre-commit run --all-files`.
+
 Configuración completa en [`.pre-commit-config.yaml`](./.pre-commit-config.yaml).

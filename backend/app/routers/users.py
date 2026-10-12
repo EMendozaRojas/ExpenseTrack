@@ -68,12 +68,12 @@ async def upload_avatar(
     content = await file.read()
     if len(content) > MAX_AVATAR_SIZE_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail="La foto de perfil supera el límite de 5 MB",
         )
     if len(content) == 0:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Archivo vacío"
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="Archivo vacío"
         )
     if detect_mime(content) != mime_type:
         raise HTTPException(
