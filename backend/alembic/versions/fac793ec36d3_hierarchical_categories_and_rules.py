@@ -10,7 +10,74 @@ from collections.abc import Sequence
 from alembic import op
 import sqlalchemy as sa
 
-from app.db.seed_categories import SYSTEM_RULES, seed_plan
+# Datos congelados tal como estaban al escribir esta migración (commit eb925b8).
+# Una migración es una foto del pasado: no importa el seed de `app/`, que
+# cambió después (taxonomía v2) y rompía `alembic upgrade head` en una BD vacía.
+_PALETTE = [
+    "#4F86C6", "#E4572E", "#76B041", "#F3A712", "#8E7CC3",
+    "#48A9A6", "#D64550", "#3E92CC", "#6A994E", "#B56576",
+    "#457B9D", "#E07A5F",
+]
+
+# (nombre, icono, subcategorías)
+_EXPENSE_ROOTS: list[tuple[str, str, list[str]]] = [
+    ("Vivienda", "🏠", [
+        "Alquiler / Hipoteca", "Comunidad", "Suministros (luz, agua, gas)",
+        "Internet y teléfono", "Mantenimiento y reparaciones", "Seguro de hogar",
+    ]),
+    ("Alimentación", "🛒", ["Supermercado", "Mercado y panadería"]),
+    ("Restauración", "🍽️", ["Restaurantes", "Bares y cafeterías", "Comida a domicilio"]),
+    ("Transporte", "🚌", [
+        "Transporte público", "Combustible", "Parking y peajes", "Taxi / VTC",
+        "Mantenimiento del vehículo", "Seguro del coche", "Impuestos e ITV",
+    ]),
+    ("Salud", "💊", [
+        "Farmacia", "Médico y dentista", "Seguro médico", "Óptica", "Gimnasio y deporte",
+    ]),
+    ("Ocio", "🎬", [
+        "Cine, teatro y eventos", "Libros, música y juegos", "Suscripciones",
+        "Viajes y vacaciones", "Aficiones",
+    ]),
+    ("Compras", "🛍️", [
+        "Ropa y calzado", "Electrónica", "Hogar y decoración", "Cuidado personal", "Regalos",
+    ]),
+    ("Educación", "🎓", ["Matrículas y cursos", "Material y libros", "Idiomas"]),
+    ("Finanzas", "🏦", [
+        "Comisiones bancarias", "Intereses de préstamos", "Impuestos y tasas", "Asesoría",
+    ]),
+    ("Mascotas", "🐾", ["Comida y accesorios", "Veterinario"]),
+    ("Familia e hijos", "👨‍👩‍👧", ["Guardería y colegio", "Ropa y juguetes", "Actividades"]),
+    ("Otros gastos", "📦", ["Retiradas de efectivo", "Donativos", "Sin clasificar"]),
+]
+
+_INCOME_ROOTS: list[tuple[str, str, list[str]]] = [
+    ("Nómina y salario", "💼", ["Nómina", "Pagas extra", "Bonus"]),
+    ("Trabajo autónomo", "🧾", ["Facturas a clientes"]),
+    ("Rendimientos", "📈", ["Intereses", "Dividendos", "Alquileres cobrados"]),
+    ("Reembolsos", "↩️", [
+        "Devoluciones de compras", "Devolución de Hacienda", "Gastos compartidos",
+    ]),
+    ("Ayudas y prestaciones", "🤝", ["Subvenciones", "Prestaciones"]),
+    ("Otros ingresos", "💰", ["Regalos recibidos", "Sin clasificar"]),
+]
+
+# (patrones, categoría raíz, subcategoría) — todas match_type='contains', owner_id NULL
+_SYSTEM_RULES: list[tuple[list[str], str, str]] = [
+    (["MERCADONA", "CARREFOUR", "LIDL", "DIA", "ALCAMPO", "EROSKI", "CONSUM"],
+     "Alimentación", "Supermercado"),
+    (["REPSOL", "CEPSA", "GALP", "BP", "SHELL"], "Transporte", "Combustible"),
+    (["NETFLIX", "SPOTIFY", "HBO", "DISNEY", "AMAZON PRIME", "FILMIN"], "Ocio", "Suscripciones"),
+    (["EMT", "METRO", "RENFE", "CERCANIAS"], "Transporte", "Transporte público"),
+    (["FARMACIA"], "Salud", "Farmacia"),
+    (["GLOVO", "UBER EATS", "JUST EAT", "DELIVEROO"], "Restauración", "Comida a domicilio"),
+]
+
+
+def _seed_plan() -> list[tuple[str, str, str, list[str], str]]:
+    """(kind, nombre, icono, subcategorías, color) para cada raíz, en orden estable."""
+    roots = [("expense", *root) for root in _EXPENSE_ROOTS]
+    roots += [("income", *root) for root in _INCOME_ROOTS]
+    return [(*root, _PALETTE[i % len(_PALETTE)]) for i, root in enumerate(roots)]
 
 
 revision: str = 'fac793ec36d3'
@@ -78,7 +145,7 @@ def upgrade() -> None:
 
     # 4. seed system categories (Apéndice A)
     root_ids: dict[tuple[str, str], int] = {}
-    for kind, root, color in seed_plan():
+    for kind, root_name, icon, subcategories, color in _seed_plan():
         root_id = bind.execute(
             sa.text(
                 """
@@ -87,10 +154,10 @@ def upgrade() -> None:
                 RETURNING id
                 """
             ),
-            {"name": root.name, "kind": kind, "icon": root.icon, "color": color},
+            {"name": root_name, "kind": kind, "icon": icon, "color": color},
         ).scalar_one()
-        root_ids[(kind, root.name)] = root_id
-        for sub_name in root.subcategories:
+        root_ids[(kind, root_name)] = root_id
+        for sub_name in subcategories:
             bind.execute(
                 sa.text(
                     """
@@ -102,7 +169,7 @@ def upgrade() -> None:
             )
 
     # 5. seed system rules (Apéndice B) — all reference expense subcategories
-    for patterns, root_name, sub_name in SYSTEM_RULES:
+    for patterns, root_name, sub_name in _SYSTEM_RULES:
         root_id = root_ids[("expense", root_name)]
         category_id = bind.execute(
             sa.text(

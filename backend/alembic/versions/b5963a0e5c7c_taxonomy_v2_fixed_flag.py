@@ -19,16 +19,90 @@ Create Date: 2026-09-08 00:00:00.000000
 
 """
 from collections.abc import Sequence
+from typing import NamedTuple
 
 from alembic import op
 import sqlalchemy as sa
 
-from app.db.seed_categories import (
-    EXPENSE_ROOTS,
-    LEGACY_SUBCATEGORY_MAP,
-    SYSTEM_RULES,
-    UNCATEGORIZED_EXPENSE,
-)
+# Datos congelados tal como estaban al escribir esta migración (commit a4203f2).
+# Una migración es una foto del pasado: no importa el seed de `app/`, que puede
+# cambiar después y romper `alembic upgrade head` en una BD vacía.
+class _Sub(NamedTuple):
+    name: str
+    is_fixed: bool = False
+
+
+class _Root(NamedTuple):
+    name: str
+    icon: str
+    subcategories: list[_Sub]
+
+
+EXPENSE_ROOTS: list[_Root] = [
+    _Root('Alimentación', '🛒', [_Sub('Supermercado')]),
+    _Root('Restauración', '🍽️', [_Sub('Restaurantes'), _Sub('Cafeterías'), _Sub('Delivery'), _Sub('Bares/Copas')]),
+    _Root('Vivienda', '🏠', [_Sub('Alquiler/Hipoteca', is_fixed=True), _Sub('Suministros (Luz/Agua/Gas)', is_fixed=True), _Sub('Internet/Móvil', is_fixed=True), _Sub('Mantenimiento')]),
+    _Root('Transporte', '🚌', [_Sub('Combustible'), _Sub('Transporte Público'), _Sub('Taxi/VTC'), _Sub('Mantenimiento/Parking')]),
+    _Root('Compras y Personal', '🛍️', [_Sub('Ropa y Calzado'), _Sub('Tecnología'), _Sub('Hogar'), _Sub('Cuidado Personal')]),
+    _Root('Suscripciones', '🔁', [_Sub('Streaming', is_fixed=True), _Sub('Software', is_fixed=True), _Sub('Gimnasio', is_fixed=True), _Sub('Servicios Recurrentes', is_fixed=True)]),
+    _Root('Ocio', '🎬', [_Sub('Cine/Eventos'), _Sub('Viajes/Hoteles'), _Sub('Juegos/Aficiones')]),
+    _Root('Salud', '💊', [_Sub('Farmacia'), _Sub('Médicos/Dentista')]),
+    _Root('Familia y Mascotas', '👨‍👩‍👧', [_Sub('Educación', is_fixed=True), _Sub('Mascotas'), _Sub('Guardería/Colegio', is_fixed=True)]),
+    _Root('Finanzas y Otros', '🏦', [_Sub('Comisiones', is_fixed=True), _Sub('Impuestos', is_fixed=True), _Sub('Sin Clasificar')]),
+]
+
+UNCATEGORIZED_EXPENSE = ('Finanzas y Otros', 'Sin Clasificar')
+
+# (patrones, categoría raíz, subcategoría) — todas match_type='contains', owner_id NULL
+SYSTEM_RULES: list[tuple[list[str], str, str]] = [
+    (['MERCADONA', 'CARREFOUR', 'LIDL', 'DIA', 'ALCAMPO', 'EROSKI', 'CONSUM'], 'Alimentación', 'Supermercado'),
+    (['REPSOL', 'CEPSA', 'GALP', 'BP', 'SHELL'], 'Transporte', 'Combustible'),
+    (['NETFLIX', 'SPOTIFY', 'HBO', 'DISNEY', 'AMAZON PRIME', 'FILMIN'], 'Suscripciones', 'Streaming'),
+    (['EMT', 'METRO', 'RENFE', 'CERCANIAS'], 'Transporte', 'Transporte Público'),
+    (['FARMACIA'], 'Salud', 'Farmacia'),
+    (['GLOVO', 'UBER EATS', 'JUST EAT', 'DELIVEROO'], 'Restauración', 'Delivery'),
+]
+
+# Mapa best-effort de la taxonomía original a la v2. Ambigua -> UNCATEGORIZED.
+LEGACY_SUBCATEGORY_MAP: dict[str, tuple[str, str]] = {
+    'Supermercado': ('Alimentación', 'Supermercado'),
+    'Restaurantes': ('Restauración', 'Restaurantes'),
+    'Comida a domicilio': ('Restauración', 'Delivery'),
+    'Alquiler / Hipoteca': ('Vivienda', 'Alquiler/Hipoteca'),
+    'Suministros (luz, agua, gas)': ('Vivienda', 'Suministros (Luz/Agua/Gas)'),
+    'Internet y teléfono': ('Vivienda', 'Internet/Móvil'),
+    'Mantenimiento y reparaciones': ('Vivienda', 'Mantenimiento'),
+    'Seguro de hogar': ('Suscripciones', 'Servicios Recurrentes'),
+    'Transporte público': ('Transporte', 'Transporte Público'),
+    'Combustible': ('Transporte', 'Combustible'),
+    'Parking y peajes': ('Transporte', 'Mantenimiento/Parking'),
+    'Taxi / VTC': ('Transporte', 'Taxi/VTC'),
+    'Mantenimiento del vehículo': ('Transporte', 'Mantenimiento/Parking'),
+    'Seguro del coche': ('Suscripciones', 'Servicios Recurrentes'),
+    'Impuestos e ITV': ('Finanzas y Otros', 'Impuestos'),
+    'Farmacia': ('Salud', 'Farmacia'),
+    'Médico y dentista': ('Salud', 'Médicos/Dentista'),
+    'Seguro médico': ('Suscripciones', 'Servicios Recurrentes'),
+    'Gimnasio y deporte': ('Suscripciones', 'Gimnasio'),
+    'Cine, teatro y eventos': ('Ocio', 'Cine/Eventos'),
+    'Libros, música y juegos': ('Ocio', 'Juegos/Aficiones'),
+    'Suscripciones': ('Suscripciones', 'Streaming'),
+    'Viajes y vacaciones': ('Ocio', 'Viajes/Hoteles'),
+    'Aficiones': ('Ocio', 'Juegos/Aficiones'),
+    'Ropa y calzado': ('Compras y Personal', 'Ropa y Calzado'),
+    'Electrónica': ('Compras y Personal', 'Tecnología'),
+    'Hogar y decoración': ('Compras y Personal', 'Hogar'),
+    'Cuidado personal': ('Compras y Personal', 'Cuidado Personal'),
+    'Matrículas y cursos': ('Familia y Mascotas', 'Educación'),
+    'Material y libros': ('Familia y Mascotas', 'Educación'),
+    'Idiomas': ('Familia y Mascotas', 'Educación'),
+    'Comisiones bancarias': ('Finanzas y Otros', 'Comisiones'),
+    'Impuestos y tasas': ('Finanzas y Otros', 'Impuestos'),
+    'Comida y accesorios': ('Familia y Mascotas', 'Mascotas'),
+    'Veterinario': ('Familia y Mascotas', 'Mascotas'),
+    'Guardería y colegio': ('Familia y Mascotas', 'Guardería/Colegio'),
+}
+
 
 revision: str = 'b5963a0e5c7c'
 down_revision: str | None = 'fac793ec36d3'

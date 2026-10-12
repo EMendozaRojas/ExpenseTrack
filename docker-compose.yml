@@ -37,6 +37,7 @@ services:
     volumes:
       - ./backend/app:/app/app
       - ./backend/alembic:/app/alembic
+      - ./backend/alembic.ini:/app/alembic.ini
       - ./backend/tests:/app/tests
       - ./backend/scripts:/app/scripts
       - ./backend/pyproject.toml:/app/pyproject.toml
@@ -49,7 +50,9 @@ services:
         condition: service_healthy
       mailhog:
         condition: service_started
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    # Aplica las migraciones pendientes antes de levantar la API; si una falla,
+    # el backend no arranca (ver `docker compose logs backend`).
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
 
   frontend:
     build:

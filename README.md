@@ -111,6 +111,12 @@ docker compose up --build
 
 El login con Google es opcional: sin sus variables en `.env`, ese botón no funciona y el resto de la app sí.
 
+Al arrancar, el backend aplica solo las migraciones pendientes de la base de datos (`alembic upgrade head`): en una instalación nueva crea todas las tablas y las categorías de sistema. Si una migración falla, el backend no arranca y el error aparece en `docker compose logs backend`. Para lanzarlas a mano:
+
+```bash
+docker compose exec backend alembic upgrade head
+```
+
 ### Datos de prueba
 
 Para probar la app con varios meses de movimientos y algunas metas:
