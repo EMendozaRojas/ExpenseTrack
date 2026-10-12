@@ -18,4 +18,4 @@
 ## 4. Verificación
 
 - [x] 4.1 `pytest`, `tsc`, `eslint`, `vitest` y Prettier en verde
-- [ ] 4.2 En el navegador: con un token de acceso caducado la app sigue funcionando y en `localStorage` aparece un refresh token nuevo
+- [x] 4.2 En el navegador: con un token de acceso caducado la app sigue funcionando y en `localStorage` aparece un refresh token nuevo
