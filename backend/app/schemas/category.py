@@ -9,7 +9,7 @@ Kind = Literal["income", "expense"]
 
 
 class CategoryCreate(BaseModel):
-    name: str = Field(description="Nombre de la categoría.", examples=["Gimnasio"])
+    name: str = Field(max_length=100, description="Nombre de la categoría.", examples=["Gimnasio"])
     kind: Kind = Field(
         default="expense",
         description="`expense` (gasto) o `income` (ingreso). En una subcategoría se ignora: "
@@ -21,9 +21,11 @@ class CategoryCreate(BaseModel):
         description="Categoría raíz de la que cuelga. Sin padre, se crea una raíz.",
         examples=[50],
     )
-    icon: str | None = Field(default=None, description="Emoji o icono.", examples=["🏋️"])
+    icon: str | None = Field(
+        max_length=16, default=None, description="Emoji o icono.", examples=["🏋️"]
+    )
     color: str | None = Field(
-        default=None, description="Color en hexadecimal.", examples=["#4F86C6"]
+        max_length=16, default=None, description="Color en hexadecimal.", examples=["#4F86C6"]
     )
     is_fixed: bool = Field(
         default=False,
@@ -52,9 +54,7 @@ class CategoryRead(BaseModel):
 
 
 class CategoryDeleteResult(BaseModel):
-    reassigned_transactions: int = Field(
-        description="Movimientos que pasaron a \"Sin Clasificar\"."
-    )
+    reassigned_transactions: int = Field(description='Movimientos que pasaron a "Sin Clasificar".')
     reassigned_subcategories: int = Field(
         description="Subcategorías que subieron al nivel del padre."
     )

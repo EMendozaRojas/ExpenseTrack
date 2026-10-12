@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.limits import MAX_AMOUNT
+
 AccountType = Literal["general", "checking", "savings", "credit_card", "cash", "wallet"]
 
 
@@ -14,7 +16,9 @@ _TYPE_DESCRIPTION = (
 
 
 class AccountCreate(BaseModel):
-    name: str = Field(description="Nombre de la cuenta.", examples=["Cuenta Principal"])
+    name: str = Field(
+        max_length=120, description="Nombre de la cuenta.", examples=["Cuenta Principal"]
+    )
     type: AccountType = Field(
         default="general",
         description=_TYPE_DESCRIPTION + " Opcional; por defecto `general`.",
@@ -28,6 +32,8 @@ class AccountCreate(BaseModel):
         examples=["EUR"],
     )
     initial_balance: Decimal = Field(
+        gt=-MAX_AMOUNT,
+        lt=MAX_AMOUNT,
         default=Decimal("0"),
         description="Saldo al crear la cuenta, antes de cualquier movimiento.",
         examples=["1500.00"],
@@ -40,7 +46,9 @@ class AccountCreate(BaseModel):
 
 
 class AccountUpdate(BaseModel):
-    name: str | None = Field(default=None, description="Nuevo nombre.", examples=["Ahorros"])
+    name: str | None = Field(
+        max_length=120, default=None, description="Nuevo nombre.", examples=["Ahorros"]
+    )
     type: AccountType | None = Field(
         default=None, description=_TYPE_DESCRIPTION, examples=["savings"]
     )

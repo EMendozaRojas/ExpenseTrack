@@ -8,6 +8,7 @@ import { googleLoginUrl } from "./api";
 import { useAuth } from "./useAuth";
 
 const MIN_PASSWORD_LENGTH = 8;
+const MAX_PASSWORD_LENGTH = 72;
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -29,6 +30,12 @@ export function RegisterPage() {
 
     if (password.length < MIN_PASSWORD_LENGTH) {
       setValidationError(`La contraseña debe tener al menos ${MIN_PASSWORD_LENGTH} caracteres.`);
+      return;
+    }
+    if (password.length > MAX_PASSWORD_LENGTH) {
+      setValidationError(
+        `La contraseña puede tener como máximo ${MAX_PASSWORD_LENGTH} caracteres.`,
+      );
       return;
     }
     if (password !== confirmPassword) {
@@ -69,6 +76,7 @@ export function RegisterPage() {
           autoComplete="new-password"
           required
           minLength={MIN_PASSWORD_LENGTH}
+          maxLength={MAX_PASSWORD_LENGTH}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
         />
@@ -95,9 +103,7 @@ export function RegisterPage() {
             </option>
           ))}
         </select>
-        <p className="form-hint">
-          Podrás cambiarla más adelante desde Configuración.
-        </p>
+        <p className="form-hint">Podrás cambiarla más adelante desde Configuración.</p>
 
         {errorMessage && (
           <p role="alert" className="form-error">

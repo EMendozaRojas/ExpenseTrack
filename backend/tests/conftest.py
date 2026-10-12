@@ -15,13 +15,13 @@ os.environ["DATABASE_URL"] = _dev_url.render_as_string(hide_password=False)
 os.environ["SMTP_HOST"] = ""
 
 import pytest  # noqa: E402
-from alembic import command  # noqa: E402
-from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import create_engine, event, text  # noqa: E402
 from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
 
 import app.services.storage as storage  # noqa: E402
+from alembic import command  # noqa: E402
+from alembic.config import Config  # noqa: E402
 from app.auth.security import create_access_token, hash_password  # noqa: E402
 from app.core.database import engine, get_db  # noqa: E402
 from app.main import app  # noqa: E402

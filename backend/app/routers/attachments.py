@@ -13,6 +13,7 @@ from app.models.attachment import Attachment
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.schemas.attachment import AttachmentRead
+from app.services.file_signature import content_disposition, detect_mime, safe_filename
 from app.services.storage import get_storage_backend
 
 router = APIRouter(tags=[Tag.ADJUNTOS], responses=AUTH_RESPONSES)
@@ -36,7 +37,9 @@ def _get_owned_transaction(db: Session, transaction_id: int, current_user: User)
         .first()
     )
     if transaction is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Movimiento no encontrado")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Movimiento no encontrado"
+        )
     return transaction
 
 
@@ -64,7 +67,8 @@ def _get_owned_attachment(db: Session, attachment_id: int, current_user: User) -
         e404=_TRANSACTION_NOT_FOUND,
         e413=("El archivo supera los 10 MB.", "El archivo supera el límite de 10 MB"),
         e415=(
-            "El archivo no es JPEG, PNG, WebP ni PDF.",
+            "El archivo no es JPEG, PNG, WebP ni PDF, o su contenido no coincide con el "
+            "tipo declarado.",
             "Solo se admiten imágenes (JPEG/PNG/WebP) o PDF",
         ),
         e422=("El archivo está vacío.", "Archivo vacío"),
@@ -96,7 +100,14 @@ async def upload_attachment(
             detail="El archivo supera el límite de 10 MB",
         )
     if len(content) == 0:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Archivo vacío")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Archivo vacío"
+        )
+    if detect_mime(content) != mime_type:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="El contenido del archivo no coincide con su tipo",
+        )
 
     storage_key = uuid.uuid4().hex
     get_storage_backend().save(storage_key, io.BytesIO(content))
@@ -105,7 +116,7 @@ async def upload_attachment(
         transaction_id=transaction.id,
         owner_id=current_user.id,
         storage_key=storage_key,
-        filename=file.filename or "adjunto",
+        filename=safe_filename(file.filename),
         mime_type=mime_type,
         size_bytes=len(content),
     )
@@ -167,7 +178,10 @@ def download_attachment(
     return StreamingResponse(
         file_handle,
         media_type=attachment.mime_type,
-        headers={"Content-Disposition": f'inline; filename="{attachment.filename}"'},
+        headers={
+            "Content-Disposition": content_disposition(attachment.filename),
+            "X-Content-Type-Options": "nosniff",
+        },
     )
 
 

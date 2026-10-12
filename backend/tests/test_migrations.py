@@ -9,13 +9,13 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
-from alembic import command
-from alembic.config import Config
-from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import URL, make_url
 from sqlalchemy.exc import ProgrammingError
 
+from alembic import command
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from app.core.config import get_settings
 
 ALEMBIC_INI = Path(__file__).resolve().parents[1] / "alembic.ini"

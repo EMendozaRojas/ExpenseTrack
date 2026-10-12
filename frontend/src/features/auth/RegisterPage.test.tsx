@@ -47,6 +47,21 @@ describe("RegisterPage", () => {
     expect(api.register).not.toHaveBeenCalled();
   });
 
+  it("pide al menos 8 caracteres de contraseña antes de enviar", async () => {
+    const user = userEvent.setup();
+    renderRegisterPage();
+
+    const password = screen.getByLabelText("Contraseña");
+    password.removeAttribute("minLength");
+    await user.type(screen.getByLabelText("Email"), "demo@example.com");
+    await user.type(password, "1234567");
+    await user.type(screen.getByLabelText("Confirmar contraseña"), "1234567");
+    await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
+
+    expect(await screen.findByRole("alert")).toHaveTextContent("al menos 8 caracteres");
+    expect(api.register).not.toHaveBeenCalled();
+  });
+
   it("registra e inicia sesión automáticamente", async () => {
     const user = userEvent.setup();
     vi.mocked(api.register).mockResolvedValue({

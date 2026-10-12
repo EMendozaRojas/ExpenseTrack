@@ -1,6 +1,8 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
+from sqlalchemy.exc import DataError
 
 from app.core.config import get_settings
 from app.core.openapi import API_DESCRIPTION, API_TITLE, API_VERSION, OPENAPI_TAGS, Tag
@@ -40,6 +42,21 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.exception_handler(DataError)
+async def data_error_handler(request: Request, exc: DataError) -> JSONResponse:
+    """Red de seguridad: si un valor llega a la base y esta lo rechaza por
+    tamaño o formato, es un dato inválido (422), no un fallo del servidor.
+    Los schemas ya acotan los campos; esto cubre lo que se escape."""
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={
+            "detail": "Los datos no son válidos: algún valor es demasiado largo o está "
+            "fuera de rango"
+        },
+    )
+
 
 app.include_router(auth.router, prefix="/api/v1")
 app.include_router(categories.router, prefix="/api/v1")

@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.core.openapi import AUTH_RESPONSES, Tag, error_responses
 from app.models.user import User
 from app.schemas.user import UserProfileUpdate, UserRead
+from app.services.file_signature import detect_mime
 from app.services.storage import get_storage_backend
 
 router = APIRouter(prefix="/users/me", tags=[Tag.USUARIO], responses=AUTH_RESPONSES)
@@ -43,7 +44,10 @@ def update_profile(
         415,
         422,
         e413=("La imagen supera los 5 MB.", "La foto de perfil supera el límite de 5 MB"),
-        e415=("La imagen no es JPEG, PNG ni WebP.", "Solo se admiten imágenes JPEG, PNG o WebP"),
+        e415=(
+            "La imagen no es JPEG, PNG ni WebP, o su contenido no coincide con el tipo declarado.",
+            "Solo se admiten imágenes JPEG, PNG o WebP",
+        ),
         e422=("El archivo está vacío.", "Archivo vacío"),
     ),
 )
@@ -68,7 +72,14 @@ async def upload_avatar(
             detail="La foto de perfil supera el límite de 5 MB",
         )
     if len(content) == 0:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Archivo vacío")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Archivo vacío"
+        )
+    if detect_mime(content) != mime_type:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail="El contenido del archivo no coincide con su tipo",
+        )
 
     storage = get_storage_backend()
     old_key = current_user.avatar_storage_key
@@ -110,6 +121,7 @@ def get_avatar(
     return StreamingResponse(
         file_handle,
         media_type=current_user.avatar_mime_type or "application/octet-stream",
+        headers={"X-Content-Type-Options": "nosniff"},
     )
 
 

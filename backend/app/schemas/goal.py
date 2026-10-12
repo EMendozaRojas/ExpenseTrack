@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.limits import MAX_AMOUNT
+
 Status = Literal["active", "completed", "archived"]
 
 
@@ -11,9 +13,13 @@ _LINKED_ACCOUNT = "Cuenta asociada, solo informativa: no se usa para calcular el
 
 
 class GoalCreate(BaseModel):
-    name: str = Field(description="Nombre de la meta.", examples=["Fondo de emergencia"])
+    name: str = Field(
+        max_length=120, description="Nombre de la meta.", examples=["Fondo de emergencia"]
+    )
     target_amount: Decimal = Field(
-        description="Importe objetivo, mayor que cero, en la moneda base.", examples=["6000.00"]
+        lt=MAX_AMOUNT,
+        description="Importe objetivo, mayor que cero, en la moneda base.",
+        examples=["6000.00"],
     )
     target_date: date | None = Field(
         default=None, description="Fecha objetivo (opcional).", examples=["2027-06-30"]
@@ -38,9 +44,14 @@ class GoalCreate(BaseModel):
 
 
 class GoalUpdate(BaseModel):
-    name: str | None = Field(default=None, description="Nuevo nombre.", examples=["Viaje a Japón"])
+    name: str | None = Field(
+        max_length=120, default=None, description="Nuevo nombre.", examples=["Viaje a Japón"]
+    )
     target_amount: Decimal | None = Field(
-        default=None, description="Nuevo importe objetivo, mayor que cero.", examples=["8000.00"]
+        lt=MAX_AMOUNT,
+        default=None,
+        description="Nuevo importe objetivo, mayor que cero.",
+        examples=["8000.00"],
     )
     target_date: date | None = Field(
         default=None, description="Nueva fecha objetivo.", examples=["2027-12-31"]
@@ -77,9 +88,13 @@ class GoalRead(BaseModel):
 
 
 class ContributionCreate(BaseModel):
-    amount: Decimal = Field(description="Importe aportado, mayor que cero.", examples=["250.00"])
+    amount: Decimal = Field(
+        lt=MAX_AMOUNT, description="Importe aportado, mayor que cero.", examples=["250.00"]
+    )
     contributed_at: date = Field(description="Fecha de la aportación.", examples=["2026-10-07"])
-    note: str | None = Field(default=None, description="Nota libre.", examples=["Paga extra"])
+    note: str | None = Field(
+        max_length=255, default=None, description="Nota libre.", examples=["Paga extra"]
+    )
 
     @field_validator("amount")
     @classmethod
@@ -106,6 +121,4 @@ class GoalProjection(BaseModel):
     months_remaining: int | None = Field(
         description="Meses que faltan al ritmo actual; `null` sin datos suficientes."
     )
-    projected_date: date | None = Field(
-        description="Fecha estimada; `null` sin datos suficientes."
-    )
+    projected_date: date | None = Field(description="Fecha estimada; `null` sin datos suficientes.")
