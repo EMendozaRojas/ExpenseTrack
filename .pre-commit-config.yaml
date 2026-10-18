@@ -9,8 +9,6 @@ repos:
       - id: check-json
       - id: check-added-large-files
         args: [--maxkb=1000]
-        # Originales de diseño: se guardan a tamaño completo a propósito.
-        exclude: ^Design System/
       - id: check-merge-conflict
       - id: detect-private-key
 
