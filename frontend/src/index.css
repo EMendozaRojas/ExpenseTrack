@@ -1,8 +1,6 @@
 /*
   Design system de ExpenseTrack — tema único "Navy" (dark-first por diseño,
   no por preferencia de sistema). Basado en la paleta slate de Tailwind.
-  Ver `Design System/` en la raíz del repo para el logo y la referencia
-  visual de la que parte esta paleta.
 */
 :root {
   color-scheme: dark;
